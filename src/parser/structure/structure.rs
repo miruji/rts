@@ -227,11 +227,12 @@ impl Structure
   {
     match op
     { // Принимаем только математические операции
-      TokenType::Equals |
+      TokenType::Equals => {} /* |
       TokenType::PlusEquals |
       TokenType::MinusEquals |
       TokenType::MultiplyEquals |
       TokenType::DivideEquals => {},
+      */
       _ => return
     }
 
@@ -312,6 +313,7 @@ impl Structure
         };
         let rightPart: Token = self.expression(&mut rightPart.clone()); // todo: возможно не надо клонировать токены, но скорее надо
         
+        /* todo Может плохо работать с #85, нужен контроль
         // Далее обрабатываем саму операцию
         let mut structure: RwLockWriteGuard<Structure> = structureLink.write().unwrap();
         match op 
@@ -339,6 +341,7 @@ impl Structure
         //if op == TokenType::MinusEquals    { structure.value = calculate(&TokenType::Minus,    &leftValue, &rightValue); } else 
         //if op == TokenType::MultiplyEquals { structure.value = calculate(&TokenType::Multiply, &leftValue, &rightValue); } else 
         //if op == TokenType::DivideEquals   { structure.value = calculate(&TokenType::Divide,   &leftValue, &rightValue); }
+        */
       }
     }
   }

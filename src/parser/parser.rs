@@ -24,7 +24,9 @@ use crate::parser::structure::structureType::StructureType;
 fn isMathOperator(dataType: TokenType) -> bool 
 {
   matches!(dataType, 
-    TokenType::Equals         | // =
+    // todo А еще почему тут только 1 single оператор а не все math?
+    TokenType::Equals      /* | // =
+    todo Может плохо работать с #85, нужен контроль
     TokenType::UnaryPlus      | // ++
     TokenType::PlusEquals     | // +=
     TokenType::UnaryMinus     | // --
@@ -37,6 +39,7 @@ fn isMathOperator(dataType: TokenType) -> bool
     TokenType::ModuloEquals   | // %=
     TokenType::UnaryExponent  | // ^^
     TokenType::ExponentEquals   // ^=
+    */
   )
 }
 

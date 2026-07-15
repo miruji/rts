@@ -25,7 +25,8 @@ pub const operators: &[(&str, TokenType)] = &[
   ("%", TokenType::Modulo),
   ("^", TokenType::Exponent),
 
-  // двойные математические
+  // Двойные математические
+  /* todo Может плохо работать с #85, нужен контроль
   ("++", TokenType::UnaryPlus),
   ("+=", TokenType::PlusEquals),
   ("--", TokenType::UnaryMinus),
@@ -38,8 +39,9 @@ pub const operators: &[(&str, TokenType)] = &[
   ("%=", TokenType::ModuloEquals),
   ("^^", TokenType::UnaryExponent),
   ("^=", TokenType::ExponentEquals),
+  */
 
-  // логические
+  // Логические
   (">", TokenType::GreaterThan),
   ("<", TokenType::LessThan),
   ("!", TokenType::Not),
@@ -146,9 +148,11 @@ mod tests
   {
     for (input, expectedType, expectedIndex) in [
       ("+ 1", TokenType::Plus, 1),
+      /* todo Может плохо работать с #85, нужен контроль
       ("++x", TokenType::UnaryPlus, 2),
       ("-=abc", TokenType::MinusEquals, 2),
       ("**123", TokenType::UnaryMultiply, 2),
+      */
       ("!=   ", TokenType::NotEquals, 2),
       ("->7", TokenType::Pointer, 2),
       ("~~ ", TokenType::DoubleTilde, 2),
