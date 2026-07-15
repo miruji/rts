@@ -72,7 +72,7 @@ pub fn getOperator(buffer: &[u8], index: &mut usize, bufferLength: &usize) -> To
 {
   let mut best: Option<(usize, TokenType)> = None;
   for (pat, tt) in operators.iter() {
-    let len = pat.len();
+    let len: usize = pat.len();
     if *index + len <= *bufferLength && &buffer[*index..*index + len] == pat.as_bytes() {
       match best {
         Some((best_len, _)) if len <= best_len => {} // keep the longer one

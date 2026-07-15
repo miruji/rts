@@ -10,6 +10,7 @@ mod tests
 {
   use std::mem;
   use std::sync::{Arc, RwLock, RwLockWriteGuard};
+  use crate::tokenizer::tokenizer::readTokensSimple;
   use crate::tokenizer::types::line::Line;
   use crate::tokenizer::types::token::{Token};
   use crate::tokenizer::types::tokenType::TokenType;
@@ -19,8 +20,8 @@ mod tests
   /// Получает bytes -> выдает token types для проверки в тестах
   pub(super) fn getTokensFromBuffer(src: &str) -> Vec<Token>
   {
-    let buffer: Vec<u8> = src.as_bytes().to_vec();
-    let lines: Vec< Arc<RwLock<Line>> > = crate::tokenizer::tokenizer::readTokens(buffer, false);
+    let mut buffer: Vec<u8> = src.as_bytes().to_vec();
+    let lines: Vec< Arc<RwLock<Line>> > = readTokensSimple(&mut buffer, false);
 
     let mut types: Vec<Token> = Vec::new();
     for lineLink in lines

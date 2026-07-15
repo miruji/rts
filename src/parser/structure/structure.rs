@@ -4,7 +4,7 @@ use crate::parser::structure::ffi::workerManager::callExternal;
 use crate::parser::structure::methods::parameters::{Parameters};
 use crate::parser::structure::structureType::{StructureType};
 use crate::parser::structure::tokenValue::calculate::calculate;
-use crate::tokenizer::tokenizer::readTokens;
+use crate::tokenizer::tokenizer::readTokensSimple;
 use crate::tokenizer::types::line::Line;
 use crate::tokenizer::types::token::{Token};
 use crate::tokenizer::types::tokenType::{TokenType};
@@ -395,13 +395,15 @@ impl Structure
                   }
                   value[index] = Token::newNesting(
                     vec![
-                      Line
-                      {
-                        tokens: Some(linesResult),
-                        indent: None,
-                        lines: None,
-                        parent: None
-                      }
+                      Arc::new(RwLock::new(
+                        Line
+                        {
+                          tokens: Some(linesResult),
+                          indent: None,
+                          lines: None,
+                          parent: None
+                        }
+                      ))
                     ]
                   );
                   value[index].setDataType( TokenType::Link ); // todo: Речь не о Link, а об Array?
@@ -660,17 +662,21 @@ impl Structure
                 };
                 
                 // Формируем токен Nesting: одна линия с двумя токенами-строками
-                return Token::newNesting(vec![Line {
-                  tokens: Some(vec![
-                    // Путь к lib, например: "./libprint.so"
-                    Token::new(TokenType::String, libraryPath),
-                    // Имя метода, который вызывают; например: "method" в lib.method(...)
-                    Token::new(TokenType::String, link[0].clone()) // todo Но кстати оно больше не надо будет? зачем тогда .clone
-                  ]),
-                  indent: None,
-                  lines: None,
-                  parent: None,
-                }]);
+                return Token::newNesting(vec![
+                  Arc::new(RwLock::new(
+                    Line {
+                      tokens: Some(vec![
+                        // Путь к lib, например: "./libprint.so"
+                        Token::new(TokenType::String, libraryPath),
+                        // Имя метода, который вызывают; например: "method" в lib.method(...)
+                        Token::new(TokenType::String, link[0].clone()) // todo Но кстати оно больше не надо будет? зачем тогда .clone
+                      ]),
+                      indent: None,
+                      lines: None,
+                      parent: None,
+                    }
+                  ))
+                ]);
                 //
               }
             }
@@ -713,13 +719,15 @@ impl Structure
                       { // Если это был просто запуск метода, то запускаем его
                         let mut parametersToken: Token = Token::newNesting(
                           vec![
-                            Line
-                            {
-                              tokens: Some(parameters),
-                              indent: None,
-                              lines: None,
-                              parent: None
-                            }
+                            Arc::new(RwLock::new(
+                              Line
+                              {
+                                tokens: Some(parameters),
+                                indent: None,
+                                lines: None,
+                                parent: None
+                              }
+                            ))
                           ]
                         );
                         parametersToken.setDataType( TokenType::CircleBracketBegin );
@@ -790,8 +798,8 @@ impl Structure
 
           let mut expressionBufferTokens: Vec<Token> = 
           {
-            readTokens(
-              expressionBuffer.as_bytes().to_vec(), 
+            readTokensSimple(
+              &mut expressionBuffer.as_bytes().to_vec(), 
               false
             )[0] // Получаем результат выражения в виде ссылки на буферную линию
               .read().unwrap() // Читаем ссылку и
@@ -943,8 +951,9 @@ impl Structure
           {
             if let Some(lines) = &linkResult.lines 
             {
-              if let Some(firstLine) = lines.get(0) 
+              if let Some(firstLineLink) = lines.get(0) 
               {
+                let firstLine: RwLockReadGuard<Line> = firstLineLink.read().unwrap();
                 if let Some(tokens) = &firstLine.tokens 
                 {
                   if tokens.len() == 2
@@ -955,8 +964,9 @@ impl Structure
                     let methodName: String = tokens[1].getData().toString().unwrap();
 
                     // Получаем аргументы из value[i+1] - скобка
-                    let bracket: &Token = &value[i + 1];
-                    let bracketLines: &Vec<Line> = bracket.lines.as_ref().unwrap();
+                    let bracket: &Token = &value[i+1];
+                    
+                    let bracketLines: &Vec< Arc<RwLock<Line>> > = bracket.lines.as_ref().unwrap();
                     let parameters: Parameters = Parameters::new(Some(bracketLines.to_vec()));
                     let mut parametersTokens: Vec<Token> = parameters.getAllExpressions(self).unwrap();
 
@@ -998,15 +1008,19 @@ impl Structure
               match &value[i+1].lines
               {
                 None => Token::newEmpty(TokenType::None),
-                Some(lines) => match lines[0].tokens.clone() // todo Может быть не 0
+                Some(lines) => 
                 {
-                  Some(mut tokenTokens) =>
-                  { // если получилось то оставляем его
-                    self.expression(&mut tokenTokens)
-                  }
-                  None =>
-                  { // если не получилось, то просто None
-                    Token::newEmpty(TokenType::None)
+                  let line: RwLockReadGuard<Line> = lines[0].read().unwrap();
+                  match line.tokens.clone() // todo Может быть не 0
+                  {
+                    Some(mut tokenTokens) =>
+                    { // если получилось то оставляем его
+                      self.expression(&mut tokenTokens)
+                    }
+                    None =>
+                    { // если не получилось, то просто None
+                      Token::newEmpty(TokenType::None)
+                    }
                   }
                 }
                 //
@@ -1044,18 +1058,24 @@ impl Structure
             match &value[i].lines
             {
               None => Token::newEmpty(TokenType::None),
-              Some(lines) => match lines[0].tokens.clone() // todo Может быть не 0
+              Some(lines) => 
               {
-                Some(mut tokenTokens) =>
-                { // Если получилось то оставляем его
-                  self.expression(&mut tokenTokens)
+                let line: RwLockReadGuard<Line> = lines[0].read().unwrap();
+                match line.tokens.clone() // todo Может быть не 0
+                {
+                  Some(mut tokenTokens) =>
+                  { // Если получилось то оставляем его
+                    self.expression(&mut tokenTokens)
+                  }
+                  None =>
+                  { // Если не получилось, то просто None
+                    Token::newEmpty(TokenType::None)
+                  }
                 }
-                None =>
-                { // Если не получилось, то просто None
-                  Token::newEmpty(TokenType::None)
-                }
+                //
               }
             }
+            //
           };
         }
         _ =>
