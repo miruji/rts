@@ -89,27 +89,35 @@ fn readTokens(
     
     // Смотрим, является ли это endline
     if byte == b'\n'
-    { // Если это действительно конец строки,
-      // то вкладываем возможные скобки
-      
-      // Добавляем новую линию и пушим ссылку на неё
-      let lineTokens: Vec<Token> = std::mem::take(&mut lineTokens); // Пустой вектор для следующей
-      if !lineTokens.is_empty()
-      { // Избавляет от пустых линий
-        linesLinks.push(
-          Arc::new(RwLock::new(
-            Line
-            {
-              tokens: Some(lineTokens), // Забираем все токены в линию
-              indent: None, // todo Удалить - больше не используется
-              lines: None, // В данный момент у неё нет вложенных линий, будет чуть ниже
-              parent: None  // Также у неё нет родителя, это тоже будет ниже при вложении
-            }
-          ))
-        );
+    { // Проверяем: если последний токен - оператор, выражение не завершено; #85
+      let isContinuation: bool = lineTokens.last()
+        .map_or(false, |token: &Token| token.getDataType().isContinuationOperator());
+
+      if isContinuation
+      { // Перенос строки - просто пропускаем \n, чтение продолжается
+        index += 1;
+      } else
+      { // Действительно конец строки - вкладываем возможные скобки
+
+        // Добавляем новую линию и пушим ссылку на неё
+        let lineTokens: Vec<Token> = std::mem::take(&mut lineTokens); // Пустой вектор для следующей
+        if !lineTokens.is_empty()
+        { // Избавляет от пустых линий
+          linesLinks.push(
+            Arc::new(RwLock::new(
+              Line
+              {
+                tokens: Some(lineTokens), // Забираем все токены в линию
+                indent: None, // todo Удалить - больше не используется
+                lines: None, // В данный момент у неё нет вложенных линий, будет чуть ниже
+                parent: None  // Также у неё нет родителя, это тоже будет ниже при вложении
+              }
+            ))
+          );
+        }
+
+        index += 1;
       }
-      
-      index += 1;
     } else
     if byte == b'('
     { // Группировка выражения - как раньше, через Token.lines
