@@ -25,6 +25,33 @@ fn pushLineToken(token: &mut Token, lineTokens: &mut Vec<Token>, start: usize, e
   lineTokens.push(token.clone());
 }
 
+// =================================================================================================
+
+/// Забирает все токены из `lineTokens`, создаёт из них `Line` и добавляет в `linesLinks`;
+/// 
+/// Если токенов нет — ничего не делает.
+fn pushLineFromTokens(
+  lineTokens: &mut Vec<Token>,
+  innerLines: Option< Vec< Arc<RwLock<Line>> > >,
+  linesLinks: &mut Vec< Arc<RwLock<Line>> >
+) {
+  let tokens: Vec<Token> = std::mem::take(lineTokens); // Пустой вектор для следующей
+  if !tokens.is_empty()
+  {
+    linesLinks.push(
+      Arc::new(RwLock::new(Line {
+        tokens: Some(tokens),
+        indent: None, // todo Устаревшее поле, можно убрать позже
+        lines: innerLines,
+        parent: None,
+      })
+    ));
+    //
+  }
+}
+
+// =================================================================================================
+
 /// Обертка для простоты использования чтения токенайзера
 pub fn readTokensSimple(buffer: &mut Vec<u8>, debugMode: bool) -> Vec< Arc<RwLock<Line>> > 
 {
@@ -96,22 +123,8 @@ fn readTokens(
       } else
       { // Действительно конец строки - вкладываем возможные скобки
 
-        // Добавляем новую линию и пушим ссылку на неё
-        let lineTokens: Vec<Token> = std::mem::take(&mut lineTokens); // Пустой вектор для следующей
-        if !lineTokens.is_empty()
-        { // Избавляет от пустых линий
-          linesLinks.push(
-            Arc::new(RwLock::new(
-              Line
-              {
-                tokens: Some(lineTokens), // Забираем все токены в линию
-                indent: None, // todo Удалить - больше не используется
-                lines: None, // В данный момент у неё нет вложенных линий, будет чуть ниже
-                parent: None  // Также у неё нет родителя, это тоже будет ниже при вложении
-              }
-            ))
-          );
-        }
+        // Добавляем новую линию.
+        pushLineFromTokens(&mut lineTokens, None, &mut linesLinks);
 
         index += 1;
       }
@@ -141,35 +154,15 @@ fn readTokens(
       if index < buffer.len() && // Выйдет при конце чтения
         buffer[index] == b'}' // buffer[index] должен быть closeByte, пропускаем его
       { index += 1; }
-  
-      let currentTokens: Vec<Token> = std::mem::take(&mut lineTokens);
-      linesLinks.push(Arc::new(RwLock::new(Line {
-        tokens: if currentTokens.is_empty() { None } else { Some(currentTokens) },
-        indent: None,
-        lines:  Some(innerLines),
-        parent: None,
-      })));
+      
+      // Добавляем новую линию.
+      pushLineFromTokens(&mut lineTokens, Some(innerLines), &mut linesLinks);
     } else
     if byte == b'}' || byte == b')' 
     { // Закрытие вложения
       
-      // todo Это дубликат endline кстати - надо будет общее сделать
-      // Добавляем новую линию и пушим ссылку на неё
-      let lineTokens: Vec<Token> = std::mem::take(&mut lineTokens); // Пустой вектор для следующей
-      if !lineTokens.is_empty()
-      { // Избавляет от пустых линий
-        linesLinks.push(
-          Arc::new(RwLock::new(
-            Line
-            {
-              tokens: Some(lineTokens), // Забираем все токены в линию
-              indent: None, // todo Удалить - больше не используется
-              lines:  None, // В данный момент у неё нет вложенных линий, будет чуть ниже
-              parent: None  // Также у неё нет родителя, это тоже будет ниже при вложении
-            }
-          ))
-        );
-      }
+      // Добавляем новую линию.
+      pushLineFromTokens(&mut lineTokens, None, &mut linesLinks);
 
       index += 1;
       break
@@ -189,19 +182,9 @@ fn readTokens(
       lineTokens.push(Token::newEmpty(TokenType::Comment));
 
       // Комментарий всегда завершает текущую линию - как endline;
-      // По оставшемуся токену Comment потом чистит nesting/comments.rs
-      let lineTokens: Vec<Token> = std::mem::take(&mut lineTokens);
-      linesLinks.push(
-        Arc::new(RwLock::new(
-          Line
-          {
-            tokens: Some(lineTokens),
-            indent: None,
-            lines:  None,
-            parent: None
-          }
-        ))
-      );
+      // Остается токен комментария;
+      // Добавляем новую линию.
+      pushLineFromTokens(&mut lineTokens, None, &mut linesLinks);
     } else
     if isDigit(&byte) || (byte == b'-' && index+1 < bufferLength && isDigit(&buffer[index+1]))
     { // Получаем все возможные численные примитивные типы данных
