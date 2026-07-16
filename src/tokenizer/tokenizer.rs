@@ -3,10 +3,7 @@ use std::sync::{Arc, RwLock};
 use std::time::{Instant, Duration};
 #[cfg(all(not(target_family = "wasm"), not(test)))]
 use crate::logger::logger::{log, logSeparator};
-#[cfg(not(feature = "analyzer"))]
 use crate::tokenizer::read::primitives::comments::{deleteComment};
-#[cfg(feature = "analyzer")]
-use crate::tokenizer::read::primitives::comments::{deleteComments}; 
 use crate::tokenizer::read::primitives::numbers::{getNumber, isDigit};
 use crate::tokenizer::read::primitives::operators::{getOperator, isSingleChar};
 use crate::tokenizer::read::primitives::quotes::getQuotes;
@@ -178,22 +175,33 @@ fn readTokens(
       break
     } else
     if byte == b'#'
-    { // Ставим метку на комментарий в линии, по ним потом будут удалены линии
+    { // Комментарий # / ## / ###; deleteComment сам находит границу по правилам уровня
       #[cfg(feature = "analyzer")]
-      deleteComments(&buffer, &mut index, &bufferLength, &lineIndent); // Пропускает комментарии
-      #[cfg(not(feature = "analyzer"))]
+      let start: usize = index;
       deleteComment(&buffer, &mut index, &bufferLength); // Пропускает комментарий
-      //
+
       #[cfg(feature = "analyzer")]
       {
         let mut token: Token = Token::newEmpty(TokenType::Comment);
         pushLineToken(&mut token, &mut lineTokens, start, index);
       }
       #[cfg(not(feature = "analyzer"))]
-      {
-        let token: Token = Token::newEmpty(TokenType::Comment);
-        lineTokens.push(token);
-      }
+      lineTokens.push(Token::newEmpty(TokenType::Comment));
+
+      // Комментарий всегда завершает текущую линию - как endline;
+      // По оставшемуся токену Comment потом чистит nesting/comments.rs
+      let lineTokens: Vec<Token> = std::mem::take(&mut lineTokens);
+      linesLinks.push(
+        Arc::new(RwLock::new(
+          Line
+          {
+            tokens: Some(lineTokens),
+            indent: None,
+            lines:  None,
+            parent: None
+          }
+        ))
+      );
     } else
     if isDigit(&byte) || (byte == b'-' && index+1 < bufferLength && isDigit(&buffer[index+1]))
     { // Получаем все возможные численные примитивные типы данных
