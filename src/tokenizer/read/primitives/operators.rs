@@ -67,6 +67,7 @@ pub const operators: &[(&str, TokenType)] = &[
   (".", TokenType::Dot),
 ];
 
+// todo desc
 pub fn getOperator(buffer: &[u8], index: &mut usize, bufferLength: &usize) -> Token
 {
   // Ищем паттерн

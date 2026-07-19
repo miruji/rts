@@ -89,8 +89,10 @@ pub fn getWord(buffer: &[u8], index: &mut usize, bufferLength: &usize) -> Token
       // Ключевое слово 
       for (keyword, tokenType) in keywords.iter() 
       {
-        if result == *keyword {
-          // todo true и false – особые случаи ?
+        if result == *keyword 
+        { // todo true и false – особые случаи ?
+          //   Мб просто их сделать True/False как и 
+          //   должно быть и они будут отдельный от number в Parser?
           return if result == "true" || result == "false" {
             Token::new(*tokenType, result)
           } else {

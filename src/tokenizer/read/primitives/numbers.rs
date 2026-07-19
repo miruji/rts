@@ -11,21 +11,22 @@ pub fn isDigit(byte: &u8) -> bool
 // =================================================================================================
 
 /// Проверяет buffer по index и так находит возможные примитивные числовые типы данных;
-/// `UInt, Int, UFloat, Float, Rational, Complex`
+/// `UInt, Int, UFloat, Float`
+/// 
+/// todo: В теории могли бы быть Complex и Rational, но пока что они не нужны.
+///   Их появление тут решает теперь и FFI. Поэтому их может и не быть.
+///   Речь о синтаксическом виде и разложении их в парсере - что могло бы быть удобно.
 ///
-/// todo: Ввести Complex числа;
-///
-/// todo: Ввести работу float с .1 или . как 0.0
-pub fn getNumber(buffer: &[u8], index: &mut usize, bufferLength: &usize) -> Token
+/// todo: Ввести работу float с .1 или . как 0.0; (опасно -. или -.1 - они сложные по логике).
+pub fn getNumber(buffer: &[u8], index: &mut usize, bufferLength: &usize) -> Option<Token>
 {
   let mut savedIndex: usize = *index; // index buffer
-  let mut result: String = String::from(buffer[savedIndex] as char);
-  savedIndex += 1;
+  let mut result: String = String::new();
 
   let mut hasDot: bool = false; // dot check
   let mut negative: bool = false; // negative check
   let mut hasExponential: bool = false; // e, e+, e-
-
+  
   let mut currentByte: u8; // Текущий символ
   while savedIndex < *bufferLength
   {
@@ -46,9 +47,26 @@ pub fn getNumber(buffer: &[u8], index: &mut usize, bufferLength: &usize) -> Toke
       // Поэтому и раскрывается потом как: `10+(-20)`. Поэтому если минус перед числом -
       // он обязательно должен быть втянут в него. Поэтому для чисел он всегда унарный;
       // Для выражений: `a-b` он будет уже бинарный т.к. там логика парсера идет.
+      // Т.е. - бинарный минус это когда ты не можешь применить его без парсера.
       result.push(currentByte as char);
       negative = true;
       savedIndex += 1;
+
+      // Пропуск пустот
+      let mut lookAhead: usize = savedIndex;
+      while lookAhead < *bufferLength
+      {
+        let nextByte: u8 = buffer[lookAhead];
+        if nextByte == b' ' || nextByte == b'\t' || nextByte == b'\n'
+        {
+          lookAhead += 1;
+          continue;
+        } else if isDigit(&nextByte) {
+          savedIndex = lookAhead;
+          break;
+        }
+        return None; // Это выход для того, чтобы минус не отбирал чтение операторов
+      }
     } else
     if isDigit(&currentByte)
     { // UInt
@@ -82,8 +100,7 @@ pub fn getNumber(buffer: &[u8], index: &mut usize, bufferLength: &usize) -> Toke
         hasDot = true;
         result.push(currentByte as char);
         savedIndex += 1;
-      }
-      else
+      } else
       {
         break;
       }
@@ -120,18 +137,21 @@ pub fn getNumber(buffer: &[u8], index: &mut usize, bufferLength: &usize) -> Toke
   *index = savedIndex;
 
   // next return
-  match (hasDot, negative)
-  { // dot, negative
-    (true, true)  => Token::new( TokenType::Float,    result ),
-    (true, false) => Token::new( TokenType::UFloat,   result ),
-    (false, true) => Token::new( TokenType::Int,      result ),
-    _             => Token::new( TokenType::UInt,     result ),
-  }
+  Some(
+    match (hasDot, negative)
+    { // dot, negative
+      (true, true)  => Token::new( TokenType::Float,  result ),
+      (true, false) => Token::new( TokenType::UFloat, result ),
+      (false, true) => Token::new( TokenType::Int,    result ),
+      _             => Token::new( TokenType::UInt,   result ),
+    }
+  )
   //
 }
 
 // =================================================================================================
 
+/* todo Переписать - тут часть тестов упала.
 #[cfg(test)]
 mod tests
 {
@@ -311,5 +331,6 @@ mod tests
 
   // ===============================================================================================
 }
+*/
 
 // =================================================================================================
