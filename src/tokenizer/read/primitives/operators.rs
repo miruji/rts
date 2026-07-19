@@ -86,7 +86,7 @@ pub fn getOperator(buffer: &[u8], index: &mut usize, bufferLength: &usize) -> To
     if patternLength == 2
     {
       let mut scanIndex: usize = *index + 1;
-      skipWhitespaceBytes(buffer, &mut scanIndex, *bufferLength, b" \t");
+      skipWhitespaceBytes(buffer, &mut scanIndex, *bufferLength, b" \t\n");
       if scanIndex < *bufferLength && isSingleChar(&buffer[scanIndex]) {
         byte2 = buffer[scanIndex];
         endIndex = scanIndex + 1;

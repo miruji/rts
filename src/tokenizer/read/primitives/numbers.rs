@@ -19,7 +19,7 @@ pub fn isDigit(byte: &u8) -> bool
 ///   Речь о синтаксическом виде и разложении их в парсере - что могло бы быть удобно.
 ///
 /// todo: Ввести работу float с .1 или . как 0.0; (опасно -. или -.1 - они сложные по логике).
-pub fn getNumber(buffer: &[u8], index: &mut usize, bufferLength: &usize) -> Token
+pub fn getNumber(buffer: &[u8], index: &mut usize, bufferLength: &usize) -> Option<Token>
 {
   let mut savedIndex: usize = *index; // index buffer
   let mut result: String = String::new();
@@ -58,6 +58,8 @@ pub fn getNumber(buffer: &[u8], index: &mut usize, bufferLength: &usize) -> Toke
       skipWhitespaceBytes(buffer, &mut temp, *bufferLength, b" \t\n");
       if temp < *bufferLength && isDigit(&buffer[temp]) {
         savedIndex = temp;
+      } else {
+        return None; // Это было не число
       }
     } else
     if isDigit(&currentByte)
@@ -109,13 +111,15 @@ pub fn getNumber(buffer: &[u8], index: &mut usize, bufferLength: &usize) -> Toke
   *index = savedIndex;
 
   // next return
-  match (hasDot, negative)
-  { // dot, negative
-    (true, true)  => Token::new( TokenType::Float,  result ),
-    (true, false) => Token::new( TokenType::UFloat, result ),
-    (false, true) => Token::new( TokenType::Int,    result ),
-    _             => Token::new( TokenType::UInt,   result ),
-  }
+  Some(
+    match (hasDot, negative)
+    { // dot, negative
+      (true, true)  => Token::new( TokenType::Float,  result ),
+      (true, false) => Token::new( TokenType::UFloat, result ),
+      (false, true) => Token::new( TokenType::Int,    result ),
+      _             => Token::new( TokenType::UInt,   result ),
+    }
+  )
   //
 }
 
