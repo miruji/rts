@@ -52,23 +52,6 @@ fn pushLineFromTokens(
 
 // =================================================================================================
 
-// todo desc - вспомогательная func
-fn addSingleCharToken(buffer: &[u8], index: &mut usize, bufferLength: &usize, lineTokens: &mut Vec<Token>) -> () {
-  //
-  #[cfg(feature = "analyzer")]
-  {
-    let mut token: Token = getOperator(&buffer, &mut index, &bufferLength);
-    pushLineToken(&mut token, &mut lineTokens, start, index);
-  }
-  #[cfg(not(feature = "analyzer"))]
-  {
-    let token: Token = getOperator(&buffer, index, &bufferLength);
-    lineTokens.push(token);
-  }
-}
-
-// =================================================================================================
-
 /// Обертка для простоты использования чтения токенайзера
 pub fn readTokensSimple(buffer: &mut Vec<u8>, debugMode: bool) -> Vec< Arc<RwLock<Line>> > 
 {
@@ -203,23 +186,25 @@ fn readTokens(
       // Добавляем новую линию.
       pushLineFromTokens(&mut lineTokens, None, &mut linesLinks);
     } else
-    if isDigit(&byte) || (byte == b'-')
+    if isDigit(&byte) || byte == b'-'
     { // Получаем все возможные численные примитивные типы данных
       #[cfg(feature = "analyzer")]
       {
         let mut token: Token = getNumber(&buffer, &mut index, &bufferLength);
+        if token.getData().toString().as_deref() == Some("-")
+        { // Это обратный откат проверки выше - т.к. это был минус а не число.
+          token = Token::newEmpty(TokenType::Minus);
+        }
         pushLineToken(&mut token, &mut lineTokens, start, index);
       }
       #[cfg(not(feature = "analyzer"))]
       {
-        match getNumber(&buffer, &mut index, &bufferLength) 
-        {
-          None => 
-          { // Это был бинарный минус
-            addSingleCharToken(buffer, &mut index, &bufferLength, &mut lineTokens);
-          }
-          Some(token) => lineTokens.push(token)
+        let mut token: Token = getNumber(&buffer, &mut index, &bufferLength);
+        if token.getData().toString().as_deref() == Some("-") 
+        { // Это обратный откат проверки выше - т.к. это был минус а не число.
+          token = Token::newEmpty(TokenType::Minus);
         }
+        lineTokens.push(token);
       }
     } else
     if isLetter(&byte)
@@ -293,7 +278,16 @@ fn readTokens(
     // Получаем возможные двойные и одиночные символы
     if isSingleChar(&byte)
     {
-      addSingleCharToken(buffer, &mut index, &bufferLength, &mut lineTokens);
+      #[cfg(feature = "analyzer")]
+      {
+        let mut token: Token = getOperator(&buffer, &mut index, &bufferLength);
+        pushLineToken(&mut token, &mut lineTokens, start, index);
+      }
+      #[cfg(not(feature = "analyzer"))]
+      {
+        let token: Token = getOperator(&buffer, &mut index, &bufferLength);
+        lineTokens.push(token);
+      }
     } else
     { // Если мы ничего не нашли из возможного, значит этого нет в синтаксисе;
       // Поэтому просто идём дальше

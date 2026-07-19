@@ -67,7 +67,7 @@ pub const operators: &[(&str, TokenType)] = &[
   (".", TokenType::Dot),
 ];
 
-// todo desc
+/// Проверяет buffer по index и так находит возможные двойные и одиночные операторы
 pub fn getOperator(buffer: &[u8], index: &mut usize, bufferLength: &usize) -> Token
 {
   // Ищем паттерн

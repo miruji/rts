@@ -66,6 +66,21 @@ pub fn getWord(buffer: &[u8], index: &mut usize, bufferLength: &usize) -> Token
       { // Только если есть . то мы знаем что это ссылка
         isLink = true;
       }}
+
+      // Пропуск пустот
+      let mut lookAhead: usize = savedIndex;
+      while lookAhead < *bufferLength
+      {
+        let nextByte: u8 = buffer[lookAhead];
+        if nextByte == b' ' || nextByte == b'\t' || nextByte == b'\n'
+        {
+          lookAhead += 1;
+          continue;
+        } else if isLetter(&nextByte) {
+          savedIndex = lookAhead;
+        }
+        break;
+      }
     } else
     {
       match isLetter(&currentByte)
