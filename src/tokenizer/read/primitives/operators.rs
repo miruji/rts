@@ -1,3 +1,4 @@
+use crate::tokenizer::read::primitives::skipWhitespaceBytes;
 use crate::tokenizer::types::token::{Token};
 use crate::tokenizer::types::tokenType::TokenType;
 // =================================================================================================
@@ -85,16 +86,8 @@ pub fn getOperator(buffer: &[u8], index: &mut usize, bufferLength: &usize) -> To
     if patternLength == 2
     {
       let mut scanIndex: usize = *index + 1;
-      
-      //
-      while scanIndex < *bufferLength &&
-        (buffer[scanIndex] == b' ' || buffer[scanIndex] == b'\t') 
-      {
-        scanIndex += 1;
-      }
-
-      if scanIndex < *bufferLength && isSingleChar(&buffer[scanIndex]) 
-      {
+      skipWhitespaceBytes(buffer, &mut scanIndex, *bufferLength, b" \t");
+      if scanIndex < *bufferLength && isSingleChar(&buffer[scanIndex]) {
         byte2 = buffer[scanIndex];
         endIndex = scanIndex + 1;
       }

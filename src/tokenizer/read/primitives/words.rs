@@ -1,4 +1,5 @@
 use crate::tokenizer::read::primitives::numbers::isDigit;
+use crate::tokenizer::read::primitives::skipWhitespaceBytes;
 use crate::tokenizer::types::token::{Token};
 use crate::tokenizer::types::tokenType::TokenType;
 // =================================================================================================
@@ -68,18 +69,10 @@ pub fn getWord(buffer: &[u8], index: &mut usize, bufferLength: &usize) -> Token
       }}
 
       // Пропуск пустот
-      let mut lookAhead: usize = savedIndex;
-      while lookAhead < *bufferLength
-      {
-        let nextByte: u8 = buffer[lookAhead];
-        if nextByte == b' ' || nextByte == b'\t' || nextByte == b'\n'
-        {
-          lookAhead += 1;
-          continue;
-        } else if isLetter(&nextByte) {
-          savedIndex = lookAhead;
-        }
-        break;
+      let mut temp: usize = savedIndex;
+      skipWhitespaceBytes(buffer, &mut temp, *bufferLength, b" \t\n");
+      if temp < *bufferLength && isLetter(&buffer[temp]) {
+        savedIndex = temp;
       }
     } else
     {

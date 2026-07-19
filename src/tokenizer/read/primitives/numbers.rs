@@ -1,3 +1,4 @@
+use crate::tokenizer::read::primitives::skipWhitespaceBytes;
 use crate::tokenizer::types::token::{Token};
 use crate::tokenizer::types::tokenType::TokenType;
 // =================================================================================================
@@ -53,18 +54,10 @@ pub fn getNumber(buffer: &[u8], index: &mut usize, bufferLength: &usize) -> Toke
       savedIndex += 1;
 
       // Пропуск пустот
-      let mut lookAhead: usize = savedIndex;
-      while lookAhead < *bufferLength
-      {
-        let nextByte: u8 = buffer[lookAhead];
-        if nextByte == b' ' || nextByte == b'\t' || nextByte == b'\n'
-        {
-          lookAhead += 1;
-          continue;
-        } else if isDigit(&nextByte) {
-          savedIndex = lookAhead;
-        }
-        break;
+      let mut temp: usize = savedIndex;
+      skipWhitespaceBytes(buffer, &mut temp, *bufferLength, b" \t\n");
+      if temp < *bufferLength && isDigit(&buffer[temp]) {
+        savedIndex = temp;
       }
     } else
     if isDigit(&currentByte)
@@ -77,20 +70,10 @@ pub fn getNumber(buffer: &[u8], index: &mut usize, bufferLength: &usize) -> Toke
       
       // Нужно, чтобы читать: `12 34 . 20`
       let mut hasDigitAfterDot: bool = false;
-      let mut lookAhead: usize = savedIndex +1;
-      while lookAhead < *bufferLength
-      {
-        let nextByte: u8 = buffer[lookAhead];
-        if nextByte == b' ' || nextByte == b'\t'
-        {
-          lookAhead += 1;
-          continue;
-        } else
-        if isDigit(&nextByte)
-        {
-          hasDigitAfterDot = true;
-        }
-        break;
+      let mut temp: usize = savedIndex + 1;
+      skipWhitespaceBytes(buffer, &mut temp, *bufferLength, b" \t");
+      if temp < *bufferLength && isDigit(&buffer[temp]) {
+        hasDigitAfterDot = true;
       }
 
       //
@@ -114,21 +97,11 @@ pub fn getNumber(buffer: &[u8], index: &mut usize, bufferLength: &usize) -> Toke
       hasDot = true; // Если будет integer - то станет от этого float
 
       // Нужно, чтобы читать: `12 34 e + 2`
-      let mut lookAhead: usize = savedIndex;
-      while lookAhead < *bufferLength
-      {
-        let nextByte: u8 = buffer[lookAhead];
-        if nextByte == b' ' || nextByte == b'\t'
-        {
-          lookAhead += 1;
-          continue;
-        } else
-        if nextByte == b'+' || nextByte == b'-'
-        {
-          result.push(nextByte as char);
-          savedIndex = lookAhead + 1;
-        }
-        break;
+      let mut temp: usize = savedIndex;
+      skipWhitespaceBytes(buffer, &mut temp, *bufferLength, b" \t");
+      if temp < *bufferLength && (buffer[temp] == b'+' || buffer[temp] == b'-') {
+        result.push(buffer[temp] as char);
+        savedIndex = temp + 1;
       }
     } else { break; }
   }
