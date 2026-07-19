@@ -58,7 +58,6 @@ pub enum TokenType
   Exponent,
 
 // double math
-/* todo Может плохо работать с #85, нужен контроль
   /// ++
   UnaryPlus,
   /// +=
@@ -88,7 +87,7 @@ pub enum TokenType
   UnaryExponent,
   /// ^=
   ExponentEquals,
-*/
+
 // single logical
   /// >
   GreaterThan,
@@ -211,7 +210,6 @@ impl ToString for TokenType
       TokenType::Exponent => String::from("^"),
       
       // double math
-      /* todo Может плохо работать с #85, нужен контроль
       TokenType::UnaryPlus      => String::from("++"),
       TokenType::PlusEquals     => String::from("+="),
 
@@ -229,7 +227,6 @@ impl ToString for TokenType
 
       TokenType::UnaryExponent  => String::from("^^"),
       TokenType::ExponentEquals => String::from("^="),
-      */
 
       // single logical
       TokenType::GreaterThan => String::from(">"),

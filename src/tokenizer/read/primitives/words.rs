@@ -4,9 +4,9 @@ use crate::tokenizer::types::tokenType::TokenType;
 // =================================================================================================
 
 /// Проверяет что байт является буквой a-z A-Z
-pub fn isLetter(c: &u8) -> bool
+pub fn isLetter(byte: &u8) -> bool
 {
-  (c|32)>=b'a'&&(c|32)<=b'z'
+  (byte|32)>=b'a'&&(byte|32)<=b'z'
 }
 
 // =================================================================================================
@@ -42,28 +42,36 @@ pub fn getWord(buffer: &[u8], index: &mut usize, bufferLength: &usize) -> Token
   savedIndex += 1;
   let mut isLink: bool = false;
 
-  let mut byte1: u8; // Текущий символ
+  let mut currentByte: u8; // Текущий символ
   while savedIndex < *bufferLength
   {
-    byte1 = buffer[savedIndex]; // Значение текущего символа
+    currentByte = buffer[savedIndex]; // Значение текущего символа
+
+    // Пропуск пустот;
+    // В языке нет наводящих слов статуса - поэтому не будет `let a`.
+    if currentByte == b' ' || currentByte == b'\t'
+    {
+      savedIndex += 1;
+      continue;
+    }
     
     // todo: use match case
-    if (isDigit(&byte1) || byte1 == b'.') || // Либо число, либо . как ссылка
-      (isLink && (byte1 == b'[' || byte1 == b']')) // В случае ссылки мы можем читать динамические []
+    if (isDigit(&currentByte) || currentByte == b'.') || // Либо число, либо . как ссылка
+      (isLink && (currentByte == b'[' || currentByte == b']')) // В случае ссылки мы можем читать динамические []
     {
-      result.push(byte1 as char);
+      result.push(currentByte as char);
       savedIndex += 1;
-      match byte1 == b'.'
+      match currentByte == b'.'
       { false => {} true =>
       { // Только если есть . то мы знаем что это ссылка
         isLink = true;
       }}
     } else
     {
-      match isLetter(&byte1)
+      match isLetter(&currentByte)
       { false => { break; } true =>
       {
-        result.push(byte1 as char);
+        result.push(currentByte as char);
         savedIndex += 1;
       }}
       //

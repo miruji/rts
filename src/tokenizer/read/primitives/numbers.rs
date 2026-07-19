@@ -2,10 +2,10 @@ use crate::tokenizer::types::token::{Token};
 use crate::tokenizer::types::tokenType::TokenType;
 // =================================================================================================
 
-/// Проверяет что байт является числом
-pub fn isDigit(c: &u8) -> bool
+/// Проверяет что байт является цифрой
+pub fn isDigit(byte: &u8) -> bool
 {
-  *c >= b'0' && *c <= b'9'
+  *byte >= b'0' && *byte <= b'9'
 }
 
 // =================================================================================================
@@ -22,63 +22,105 @@ pub fn getNumber(buffer: &[u8], index: &mut usize, bufferLength: &usize) -> Toke
   let mut result: String = String::from(buffer[savedIndex] as char);
   savedIndex += 1;
 
-  let mut      dot: bool = false; // dot check
+  let mut hasDot: bool = false; // dot check
   let mut negative: bool = false; // negative check
-  let mut exponential: bool = false; // e, e+, e-
-  let rational: bool = false; // rational check
+  let mut hasExponential: bool = false; // e, e+, e-
 
-  let mut byte1: u8; // Текущий символ
-  let mut byte2: u8; // Следующий символ
+  let mut currentByte: u8; // Текущий символ
   while savedIndex < *bufferLength
   {
-    byte1 = buffer[savedIndex]; // Значение текущего символа
-    byte2 =                     // Значение следующего символа
-      match savedIndex+1 < *bufferLength
-      {
-        true  => { buffer[savedIndex+1] }
-        false => { b'\0' }
-      };
+    currentByte = buffer[savedIndex]; // Значение текущего символа
+
+    // Пропуск пустот
+    if currentByte == b' ' || currentByte == b'\t'
+    {
+      savedIndex += 1;
+      continue;
+    }
 
     // todo: use match case
     if !negative && buffer[*index] == b'-'
     { // Int/Float
-      result.push(byte1 as char);
+      // Логика тут простая - токенайзер должен вложить минус в число, потому что он рядом.
+      // Любое алгебраическое выражение будь то `10-20` - всегда `-20` общая сущность.
+      // Поэтому и раскрывается потом как: `10+(-20)`. Поэтому если минус перед числом -
+      // он обязательно должен быть втянут в него. Поэтому для чисел он всегда унарный;
+      // Для выражений: `a-b` он будет уже бинарный т.к. там логика парсера идет.
+      result.push(currentByte as char);
       negative = true;
       savedIndex += 1;
     } else
-    if isDigit(&byte1)
+    if isDigit(&currentByte)
     { // UInt
-      result.push(byte1 as char);
+      result.push(currentByte as char);
       savedIndex += 1;
     } else
-    if byte1 == b'.' && !dot && isDigit(&byte2) //&&
-      //savedIndex > 1 && buffer[*index-1] != b'.' // fixed for a.0.1 // todo Я убрал это, но мб зря
+    if currentByte == b'.' && !hasDot
     { // UFloat
-      match rational
-      { false => {}
-        true => { break; }
+      
+      // Нужно, чтобы читать: `12 34 . 20`
+      let mut hasDigitAfterDot: bool = false;
+      let mut lookAhead: usize = savedIndex +1;
+      while lookAhead < *bufferLength
+      {
+        let nextByte: u8 = buffer[lookAhead];
+        if nextByte == b' ' || nextByte == b'\t'
+        {
+          lookAhead += 1;
+          continue;
+        } else
+        if isDigit(&nextByte)
+        {
+          hasDigitAfterDot = true;
+        }
+        break;
       }
-      dot = true;
-      result.push(byte1 as char);
-      savedIndex += 1;
-    } else 
-    if !exponential && (byte1 == b'e' || byte1 == b'E') 
-    { // Это должно быть float, без повторений E.
-      exponential = true;
-      result.push(byte1 as char);
-      if byte2 == b'+' || byte2 == b'-' {
-        result.push(byte2 as char);
+
+      //
+      if hasDigitAfterDot
+      {
+        hasDot = true;
+        result.push(currentByte as char);
         savedIndex += 1;
       }
+      else
+      {
+        break;
+      }
+    } else 
+    if !hasExponential && (currentByte == b'e' || currentByte == b'E') 
+    { // Это должно быть float, без повторений E.
+
+      //
+      hasExponential = true;
+      result.push(currentByte as char);
       savedIndex += 1;
-      dot = true; // Если будет integer - то станет от этого float
+      hasDot = true; // Если будет integer - то станет от этого float
+
+      // Нужно, чтобы читать: `12 34 e + 2`
+      let mut lookAhead: usize = savedIndex;
+      while lookAhead < *bufferLength
+      {
+        let nextByte: u8 = buffer[lookAhead];
+        if nextByte == b' ' || nextByte == b'\t'
+        {
+          lookAhead += 1;
+          continue;
+        } else
+        if nextByte == b'+' || nextByte == b'-'
+        {
+          result.push(nextByte as char);
+          savedIndex = lookAhead + 1;
+        }
+        break;
+      }
     } else { break; }
   }
 
   *index = savedIndex;
 
   // next return
-  match (dot, negative)
+  match (hasDot, negative)
   { // dot, negative
     (true, true)  => Token::new( TokenType::Float,    result ),
     (true, false) => Token::new( TokenType::UFloat,   result ),

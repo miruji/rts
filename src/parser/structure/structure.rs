@@ -1067,7 +1067,7 @@ impl Structure
                 match line.tokens.clone() // todo Может быть не 0
                 {
                   Some(mut tokenTokens) =>
-                  { // Если получилось то оставляем его
+                  { // Если получилось, то оставляем его
                     self.expression(&mut tokenTokens)
                   }
                   None =>
@@ -1201,8 +1201,8 @@ impl Structure
     }
   }
 
-  /// Получает значение операции по левому и правому выражению; Это зависимость для expression.
-  /// Кроме того, может обрабатывать отрицание при использовании TokenType::Minus
+  /// Получает значение операции по левому и правому выражению; Это зависимость для expression;
+  /// Кроме того, может обрабатывать отрицание при использовании TokenType::Minus.
   fn expressionOp(&self, value: &mut Vec<Token>, valueLength: &mut usize, operations: &[TokenType])
   {
     let mut i: usize = 0;
@@ -1243,6 +1243,7 @@ impl Structure
         // поэтому мы можем проверить:
         // value -value2
         // Потому что минус входит в число и мы можем просто проверить 2 токена.
+        // Это то же самое, что: `10-20` = `10+(-20)`.
         false => match matches!(*tokenType, TokenType::Int | TokenType::Float)
         { false => {} true =>
         {
