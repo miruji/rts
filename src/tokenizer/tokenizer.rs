@@ -129,7 +129,7 @@ fn readTokens(
     byte = buffer[index]; // Текущий байт
     
     // Смотрим, является ли это endline
-    if byte == b'\n'
+    if byte == b'\n' || byte == b';'
     { // Проверяем: если последний токен - оператор, выражение не завершено; #85
       let isContinuation: bool = lineTokens.last()
         .map_or(false, |token: &Token| token.getDataType().isContinuationOperator());
@@ -203,7 +203,7 @@ fn readTokens(
       // Добавляем новую линию.
       pushLineFromTokens(&mut lineTokens, None, &mut linesLinks);
     } else
-    if isDigit(&byte) || (byte == b'-')
+    if isDigit(&byte) || byte == b'-'
     { // Получаем все возможные численные примитивные типы данных
       #[cfg(feature = "analyzer")]
       {

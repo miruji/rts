@@ -1061,21 +1061,27 @@ impl Structure
             match &value[i].lines
             {
               None => Token::newEmpty(TokenType::None),
-              Some(lines) => 
+              Some(linesLinks) => 
               {
-                let line: RwLockReadGuard<Line> = lines[0].read().unwrap();
-                match line.tokens.clone() // todo Может быть не 0
+                if linesLinks.len() > 0 
                 {
-                  Some(mut tokenTokens) =>
-                  { // Если получилось, то оставляем его
-                    self.expression(&mut tokenTokens)
+                  let line: RwLockReadGuard<Line> = linesLinks[0].read().unwrap();
+                  match line.tokens.clone() // todo Может быть не 0
+                  {
+                    Some(mut tokenTokens) =>
+                    { // Если получилось, то оставляем его
+                      self.expression(&mut tokenTokens)
+                    }
+                    None =>
+                    { // Если не получилось, то просто None
+                      Token::newEmpty(TokenType::None)
+                    }
                   }
-                  None =>
-                  { // Если не получилось, то просто None
-                    Token::newEmpty(TokenType::None)
-                  }
+                  //
+                } else 
+                { // Линий не было
+                  Token::newEmpty(TokenType::None)
                 }
-                //
               }
             }
             //
