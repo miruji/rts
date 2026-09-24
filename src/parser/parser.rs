@@ -318,7 +318,17 @@ fn linearStructure(lineTokens: &Vec<Token>, parentLink: Arc<RwLock<Structure>>) 
       { true => {} false =>
       { 
         let hasTokens: bool = rightValue.is_none();
-        let mut value: Token = parentStructure.expression(&mut rightValue.unwrap());
+        // Что ждём от FFI-вызова справа:
+        // - `a: Usize = lib.f(x)` — тип указан, он же тип возврата C-функции
+        //   и в него кастуется результат (normalizeToken ниже);
+        // - `a = lib.f(x)` / `a~~ = lib.f(x)` — тип слева получаем от правой части.
+        let expect: bridge::FfiExpect =
+          match structureType == StructureType::None || structureMutability == StructureMut::Dynamic
+          {
+            true  => bridge::FfiExpect::Infer,
+            false => bridge::FfiExpect::Typed(structureType.clone()),
+          };
+        let mut value: Token = parentStructure.expressionWith(&mut rightValue.unwrap(), &expect);
         match structureType == StructureType::None
         {
           true =>
@@ -1197,8 +1207,9 @@ pub fn readLines(structureLink: Arc<RwLock<Structure>>) -> ()
           &mut line
             .tokens.clone() // Клонируем токены, для сохранения возможности повторного запуска
             .unwrap_or_default(); // todo плохо
+        // Линия-оператор: результат никому не нужен (`lib.print(x)`)
         structureLink.read().unwrap()
-          .expression(tokens);
+          .expressionWith(tokens, &bridge::FfiExpect::Discard);
       }}
     }}
     // Идём дальше
