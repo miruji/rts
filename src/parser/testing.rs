@@ -1,3 +1,4 @@
+use std::sync::atomic::{AtomicUsize, Ordering};
 use crate::parser::structure::structure::{Structure, StructureMut};
 use crate::parser::structure::structureType::StructureType;
 use crate::tokenizer::tokenizer::readTokensSimple;
@@ -359,17 +360,61 @@ pub(super) use checkExpression;
 
 // =================================================================================================
 
-/// Записывает код в файл в `/tmp` и возвращает путь к нему.
+pub(super) static FileCounter: AtomicUsize = AtomicUsize::new(0);
+pub(super) static LibraryCounter: AtomicUsize = AtomicUsize::new(0);
+
+// =================================================================================================
+
+/// Создаёт папку в `/tmp` с уникальным номером и возвращает путь к ней.
 ///
-/// Принимает сырой литерал `r#"..."#` или строку — любой код (RTS, C и т.д.).
+/// Для тестов с `import()`, где несколько `.rt` файлов лежат в одной папке.
 ///
-///     let path: String = writeCodeFile!(r#"a := 10"#, "my.rt");
-///     let main: Arc<RwLock<Structure>> = runCode(&format!("m := import(\"{path}\")\n"));
+///     let dir: String = writeCodeDir!();
+///     let aPath: String = writeCodeFileTo!(dir, r#"hello() { = 42 }"#, "a.rt");
+///     let mainPath: String = writeCodeFileTo!(dir, r#"a := import("./a.rt")"#, "main.rt");
+macro_rules! writeCodeDir
+{
+  () =>
+  {{
+    let id: usize = $crate::parser::testing::FileCounter.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    let dirPath: std::path::PathBuf = std::env::temp_dir().join(format!("rts_dir_{id}"));
+    std::fs::create_dir_all(&dirPath)
+      .unwrap_or_else(|error| panic!("Create dir `{}`: {}", dirPath.display(), error));
+    dirPath.to_string_lossy().replace('\\', "/")
+  }};
+}
+
+pub(super) use writeCodeDir;
+
+// =================================================================================================
+
+/// Записывает код в файл в указанной папке и возвращает путь к нему.
+///
+///     let aPath: String = writeCodeFileTo!(dir, r#"hello() { = 42 }"#, "a.rt");
+macro_rules! writeCodeFileTo
+{
+  ($dir:expr, $code:expr, $name:expr) =>
+  {{
+    let path: std::path::PathBuf = std::path::PathBuf::from($dir).join($name);
+    std::fs::write(&path, $code)
+      .unwrap_or_else(|error| panic!("Write of `{}`: {}", path.display(), error));
+    path.to_string_lossy().replace('\\', "/")
+  }};
+}
+
+pub(super) use writeCodeFileTo;
+
+// =================================================================================================
+
+/// Записывает код в файл в `/tmp` с уникальным номером и возвращает путь к нему.
+///
+///     let path: String = writeCodeFile!(r#"a := 10"#);
 macro_rules! writeCodeFile
 {
-  ($code:expr, $name:expr) =>
+  ($code:expr) =>
   {{
-    let path: std::path::PathBuf = std::env::temp_dir().join($name);
+    let id: usize = $crate::parser::testing::FileCounter.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    let path: std::path::PathBuf = std::env::temp_dir().join(format!("rts_file_{id}.rt"));
     std::fs::write(&path, $code)
       .unwrap_or_else(|error| panic!("Write of `{}`: {}", path.display(), error));
     path.to_string_lossy().replace('\\', "/")
@@ -380,33 +425,31 @@ pub(super) use writeCodeFile;
 
 // =================================================================================================
 
-/// Собирает C-код в динамическую библиотеку `.so` в `/tmp` и возвращает путь к ней.
+/// Собирает C-код в динамическую библиотеку `.so` в `/tmp` с уникальным номером.
 ///
-/// Принимает сырой литерал `r#"..."#` с C-кодом и имя `.so`.
-/// Временный `.c` файл получает имя из `<name>` с заменой `.so` на `.c`.
-///
-///     let libPath: String = buildLibrary!(r#"int add(int a, int b) { return a + b; }"#, "libadd.so");
-///     // дальше подставить путь: format!(r#"… importNative("{libPath}") …"#)
+///     let libraryPath: String = buildLibrary!(r#"int add(int a, int b) { return a + b; }"#);
 macro_rules! buildLibrary
 {
-  ($code:expr, $name:expr) =>
+  ($code:expr) =>
   {{
-    let sourceName: String = $name.replace(".so", ".c");
+    let id: usize = $crate::parser::testing::LibraryCounter.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    let sourceName: String = format!("rts_src_{id}.c");
     let sourcePath: std::path::PathBuf = std::env::temp_dir().join(&sourceName);
     std::fs::write(&sourcePath, $code)
       .unwrap_or_else(|error| panic!("Write of `{}`: {}", sourcePath.display(), error));
-    let libPath: std::path::PathBuf = std::env::temp_dir().join($name);
+    let libName: String = format!("rts_lib_{id}.so");
+    let libPath: std::path::PathBuf = std::env::temp_dir().join(&libName);
     let result: std::process::Output = std::process::Command::new("cc")
       .args(["-shared", "-fPIC", "-o"])
       .arg(&libPath)
       .arg(&sourcePath)
       .output()
-      .unwrap_or_else(|error| panic!("Build of `{}`: cc was not started: {}", $name, error));
+      .unwrap_or_else(|error| panic!("Build of `{}`: cc was not started: {}", libName, error));
     let _ = std::fs::remove_file(&sourcePath);
     assert!(
       result.status.success(),
       "Build of `{}` failed: {}",
-      $name, String::from_utf8_lossy(&result.stderr)
+      libName, String::from_utf8_lossy(&result.stderr)
     );
     libPath.to_string_lossy().replace('\\', "/")
   }};
