@@ -1,7 +1,7 @@
 use crate::parser::parser::runCodeFile;
 use crate::parser::structure::structure::Structure;
 use crate::parser::structure::structureType::StructureType;
-use crate::parser::testing::{checkStructure, createDirectory, writeCodeFileTo};
+use crate::parser::testing::{checkStructure, createDirectory, relativePath, writeCodeFile};
 use std::sync::{Arc, RwLock};
 // =================================================================================================
 
@@ -9,13 +9,13 @@ use std::sync::{Arc, RwLock};
 
 // =================================================================================================
 
-/// `import("./a.rt")` — простой импорт одного файла.
+/// `import("./N.rt")` — простой импорт одного файла.
 #[test]
 fn simple() -> ()
 {
   let directory: String = createDirectory!();
 
-  let testPath: String = writeCodeFileTo!(
+  let testPath: String = writeCodeFile!(
     &directory,
     r#"
     hello() {
@@ -23,16 +23,17 @@ fn simple() -> ()
     }
 
     value: Usize = 4
-    "#,
-    "test.rt"
+    "#
   );
 
-  let mainPath: String = writeCodeFileTo!(
+  let mainPath: String = writeCodeFile!(
     &directory,
-    r#"
-    a := import("./test.rt")
-    "#,
-    "main.rt"
+    format!(
+      r#"
+      a := import("{}")
+      "#,
+      relativePath!(&testPath)
+    )
   );
 
   let main: Arc<RwLock<Structure>> = runCodeFile(&mainPath);
@@ -53,89 +54,89 @@ fn simple() -> ()
 ///  В `:=` return при вызове метода на модуле — модуль имеет `name = None`,
 ///  и `:=` не находит именную структуру для записи result.
 #[test]
-#[ignore]
 fn nested() -> ()
 {
-  let dir: String = createDirectory!();
+  let directory: String = createDirectory!();
 
   // Структура:
   //   dir/
-  //     main.rt       — импортирует `lib/a.rt` и `lib/deep/c.rt`
+  //     main         — Импортирует `lib/a` и `lib/deep/c`
   //     lib/
-  //       a.rt        — импортирует `b.rt`, вызывает `b.hello()`
-  //       b.rt        — `hello() { := "b: hello" }`
+  //       a          — Импортирует `b`, вызывает `b.hello()`
+  //       b          — `hello() { := "b: hello" }`
   //       deep/
-  //         c.rt      — импортирует `d.rt`, вызывает `d.hello()`
-  //         d.rt      — `hello() { := "d: hello" }`
+  //         c        — Импортирует `d`, вызывает `d.hello()`
+  //         d        — `hello() { := "d: hello" }`
 
-  let libDir: String = format!("{dir}/lib");
-  let deepDir: String = format!("{libDir}/deep");
-  std::fs::create_dir_all(&libDir).unwrap();
-  std::fs::create_dir_all(&deepDir).unwrap();
+  let libraryDirectory: String = format!("{directory}/lib");
+  let deepDirectory: String = format!("{libraryDirectory}/deep");
+  std::fs::create_dir_all(&libraryDirectory).unwrap();
+  std::fs::create_dir_all(&deepDirectory).unwrap();
 
-  // `lib/b.rt` — рядом с `a.rt`.
-  let bPath: String = writeCodeFileTo!(
-    &libDir,
+  let bPath: String = writeCodeFile!(
+    &libraryDirectory,
     r#"
     hello() {
       := "b: hello"
     }
-    "#,
-    "b.rt"
+    "#
   );
 
-  // `lib/a.rt` — импортирует `b.rt` из своей папки.
-  let aPath: String = writeCodeFileTo!(
-    &libDir,
-    r#"
-    b := import("./b.rt")
-    bHello := b.hello()
-
-    hello() {
-      := "a: hello"
-    }
-
-    load() {
-      c := import("./deep/c.rt")
-      := c.hello()
-    }
-    "#,
-    "a.rt"
-  );
-
-  // `lib/deep/d.rt` — рядом с `c.rt`.
-  let dPath: String = writeCodeFileTo!(
-    &deepDir,
+  let dPath: String = writeCodeFile!(
+    &deepDirectory,
     r#"
     hello() {
       := "d: hello"
     }
-    "#,
-    "d.rt"
+    "#
   );
 
-  // `lib/deep/c.rt` — импортирует `d.rt` из своей папки.
-  let cPath: String = writeCodeFileTo!(
-    &deepDir,
-    r#"
-    d := import("./d.rt")
-    dHello := d.hello()
+  let cPath: String = writeCodeFile!(
+    &deepDirectory,
+    format!(
+      r#"
+      d := import("{}")
+      dHello := d.hello()
 
-    hello() {
-      := "c: hello"
-    }
-    "#,
-    "c.rt"
+      hello() {{
+        := "c: hello"
+      }}
+      "#,
+      relativePath!(&dPath)
+    )
   );
 
-  // `main.rt` — импортирует `a.rt` из `lib/`.
-  let mainPath: String = writeCodeFileTo!(
-    &dir,
-    r#"
-    a := import("./lib/a.rt")
-    c := import("./lib/deep/c.rt")
-    "#,
-    "main.rt"
+  let aPath: String = writeCodeFile!(
+    &libraryDirectory,
+    format!(
+      r#"
+      b := import("{}")
+      bHello := b.hello()
+
+      hello() {{
+        := "a: hello"
+      }}
+
+      load() {{
+        c := import("{}")
+        := c.hello()
+      }}
+      "#,
+      relativePath!(&bPath),
+      relativePath!(&cPath, "deep")
+    )
+  );
+
+  let mainPath: String = writeCodeFile!(
+    &directory,
+    format!(
+      r#"
+      a := import("{}")
+      c := import("{}")
+      "#,
+      relativePath!(&aPath, "lib"),
+      relativePath!(&cPath, "lib/deep")
+    )
   );
 
   let main: Arc<RwLock<Structure>> = runCodeFile(&mainPath);
@@ -153,9 +154,9 @@ fn nested() -> ()
   let _ = std::fs::remove_file(&dPath);
   let _ = std::fs::remove_file(&cPath);
   let _ = std::fs::remove_file(&mainPath);
-  let _ = std::fs::remove_dir(&deepDir);
-  let _ = std::fs::remove_dir(&libDir);
-  let _ = std::fs::remove_dir(&dir);
+  let _ = std::fs::remove_dir(&deepDirectory);
+  let _ = std::fs::remove_dir(&libraryDirectory);
+  let _ = std::fs::remove_dir(&directory);
 }
 
 // =================================================================================================

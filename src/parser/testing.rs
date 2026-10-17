@@ -370,8 +370,10 @@ pub(super) static LibraryCounter: AtomicUsize = AtomicUsize::new(0);
 /// Для тестов с `import()`, где несколько `.rt` файлов лежат в одной папке.
 ///
 ///     let dir: String = createDirectory!();
-///     let aPath: String = writeCodeFileTo!(dir, r#"hello() { = 42 }"#, "a.rt");
-///     let mainPath: String = writeCodeFileTo!(dir, r#"a := import("./a.rt")"#, "main.rt");
+///     let aPath: String = writeCodeFile!(&dir, r#"hello() { = 42 }"#);
+///     let mainPath: String = writeCodeFile!(&dir, format!(
+///       r#"a := import("{}")"#, relativePath!(&aPath)
+///     ));
 macro_rules! createDirectory
 {
   () =>
@@ -391,40 +393,70 @@ pub(super) use createDirectory;
 
 // =================================================================================================
 
-/// Записывает код в файл в указанной папке и возвращает путь к нему.
+/// Absolute path → relative для `import()` в RTS-коде.
 ///
-///     let aPath: String = writeCodeFileTo!(dir, r#"hello() { = 42 }"#, "a.rt");
-macro_rules! writeCodeFileTo
+/// Берёт последний компонент пути; опциональный префикс каталога:
+///
+///     relativePath!(&path)              // `/tmp/x/10.rt` → `./10.rt`
+///     relativePath!(&path, "lib")       // → `./lib/10.rt`
+///     relativePath!(&path, "lib/deep")  // → `./lib/deep/10.rt`
+macro_rules! relativePath
 {
-  ($dir:expr, $code:expr, $name:expr) =>
+  ($absolute:expr) =>
   {{
-    let path: std::path::PathBuf = std::path::PathBuf::from($dir).join($name);
+    $crate::parser::testing::relativePathFrom(($absolute).as_ref(), None)
+  }};
 
-    std::fs::write(&path, $code)
-      .unwrap_or_else(|error| panic!("Write of `{}`: {}", path.display(), error));
-
-    path.to_string_lossy().replace('\\', "/")
+  ($absolute:expr, $dir:expr) =>
+  {{
+    $crate::parser::testing::relativePathFrom(($absolute).as_ref(), Some(($dir).as_ref()))
   }};
 }
 
-pub(super) use writeCodeFileTo;
+pub(super) use relativePath;
+
+/// Absolute path → `./[dir/]name.rt` для `import()`.
+pub(super) fn relativePathFrom(absolute: &str, dir: Option<&str>) -> String
+{
+  let name = std::path::Path::new(absolute)
+    .file_name()
+    .unwrap_or_else(|| panic!("relativePath: no file name in `{absolute}`"))
+    .to_string_lossy();
+  match dir
+  {
+    None => format!("./{name}"),
+    Some(d) => format!("./{}/{name}", d.trim_matches('/')),
+  }
+}
 
 // =================================================================================================
 
-/// Записывает код в файл в `/tmp` с уникальным номером и возвращает путь к нему.
+/// Записывает код в `.rt` с уникальным номером, возвращает **absolute** path.
+///
+/// - `writeCodeFile!(code)` — в `/tmp/{id}.rt`
+/// - `writeCodeFile!(dir, code)` — в `{dir}/{id}.rt` (несколько файлов в одной папке для `import`)
+///
+/// В RTS-код для `import` подставлять `relativePath!(&path)`, не absolute.
 ///
 ///     let path: String = writeCodeFile!(r#"a := 10"#);
+///     let aPath: String = writeCodeFile!(&dir, r#"hello() { = 42 }"#);
 macro_rules! writeCodeFile
 {
   ($code:expr) =>
   {{
     let id: usize = $crate::parser::testing::FileCounter.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-
-    let path: std::path::PathBuf = std::env::temp_dir().join(format!("rtsFile-{id}.rt"));
-
+    let path: std::path::PathBuf = std::env::temp_dir().join(format!("{id}.rt"));
     std::fs::write(&path, $code)
       .unwrap_or_else(|error| panic!("Write of `{}`: {}", path.display(), error));
+    path.to_string_lossy().replace('\\', "/")
+  }};
 
+  ($dir:expr, $code:expr) =>
+  {{
+    let id: usize = $crate::parser::testing::FileCounter.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    let path: std::path::PathBuf = std::path::PathBuf::from($dir).join(format!("{id}.rt"));
+    std::fs::write(&path, $code)
+      .unwrap_or_else(|error| panic!("Write of `{}`: {}", path.display(), error));
     path.to_string_lossy().replace('\\', "/")
   }};
 }
