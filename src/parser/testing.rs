@@ -369,22 +369,25 @@ pub(super) static LibraryCounter: AtomicUsize = AtomicUsize::new(0);
 ///
 /// Для тестов с `import()`, где несколько `.rt` файлов лежат в одной папке.
 ///
-///     let dir: String = writeCodeDir!();
+///     let dir: String = createDirectory!();
 ///     let aPath: String = writeCodeFileTo!(dir, r#"hello() { = 42 }"#, "a.rt");
 ///     let mainPath: String = writeCodeFileTo!(dir, r#"a := import("./a.rt")"#, "main.rt");
-macro_rules! writeCodeDir
+macro_rules! createDirectory
 {
   () =>
   {{
     let id: usize = $crate::parser::testing::FileCounter.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-    let dirPath: std::path::PathBuf = std::env::temp_dir().join(format!("rts_dir_{id}"));
-    std::fs::create_dir_all(&dirPath)
-      .unwrap_or_else(|error| panic!("Create dir `{}`: {}", dirPath.display(), error));
-    dirPath.to_string_lossy().replace('\\', "/")
+
+    let directoryPath: std::path::PathBuf = std::env::temp_dir().join(format!("rtsDir{id}"));
+
+    std::fs::create_dir_all(&directoryPath)
+      .unwrap_or_else(|error| panic!("Create dir `{}`: {}", directoryPath.display(), error));
+
+    directoryPath.to_string_lossy().replace('\\', "/")
   }};
 }
 
-pub(super) use writeCodeDir;
+pub(super) use createDirectory;
 
 // =================================================================================================
 
@@ -396,8 +399,10 @@ macro_rules! writeCodeFileTo
   ($dir:expr, $code:expr, $name:expr) =>
   {{
     let path: std::path::PathBuf = std::path::PathBuf::from($dir).join($name);
+
     std::fs::write(&path, $code)
       .unwrap_or_else(|error| panic!("Write of `{}`: {}", path.display(), error));
+
     path.to_string_lossy().replace('\\', "/")
   }};
 }
@@ -414,9 +419,12 @@ macro_rules! writeCodeFile
   ($code:expr) =>
   {{
     let id: usize = $crate::parser::testing::FileCounter.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-    let path: std::path::PathBuf = std::env::temp_dir().join(format!("rts_file_{id}.rt"));
+
+    let path: std::path::PathBuf = std::env::temp_dir().join(format!("rtsFile-{id}.rt"));
+
     std::fs::write(&path, $code)
       .unwrap_or_else(|error| panic!("Write of `{}`: {}", path.display(), error));
+
     path.to_string_lossy().replace('\\', "/")
   }};
 }
@@ -433,25 +441,33 @@ macro_rules! buildLibrary
   ($code:expr) =>
   {{
     let id: usize = $crate::parser::testing::LibraryCounter.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-    let sourceName: String = format!("rts_src_{id}.c");
-    let sourcePath: std::path::PathBuf = std::env::temp_dir().join(&sourceName);
+
+    // Временный `.c` файл.
+    let sourcePath: std::path::PathBuf = std::env::temp_dir().join(format!("rtsSource-{id}.c"));
+
     std::fs::write(&sourcePath, $code)
       .unwrap_or_else(|error| panic!("Write of `{}`: {}", sourcePath.display(), error));
-    let libName: String = format!("rts_lib_{id}.so");
-    let libPath: std::path::PathBuf = std::env::temp_dir().join(&libName);
+
+    // Компиляция.
+    let libraryPath: std::path::PathBuf = std::env::temp_dir().join(format!("rtsLibrary-{id}.so"));
+
     let result: std::process::Output = std::process::Command::new("cc")
       .args(["-shared", "-fPIC", "-o"])
-      .arg(&libPath)
+      .arg(&libraryPath)
       .arg(&sourcePath)
       .output()
-      .unwrap_or_else(|error| panic!("Build of `{}`: cc was not started: {}", libName, error));
+      .unwrap_or_else(|error| panic!("Build: cc was not started: {}", error));
+
+    // Удаляем исходник.
     let _ = std::fs::remove_file(&sourcePath);
+
     assert!(
       result.status.success(),
-      "Build of `{}` failed: {}",
-      libName, String::from_utf8_lossy(&result.stderr)
+      "Build failed: {}",
+      String::from_utf8_lossy(&result.stderr)
     );
-    libPath.to_string_lossy().replace('\\', "/")
+
+    libraryPath.to_string_lossy().replace('\\', "/")
   }};
 }
 

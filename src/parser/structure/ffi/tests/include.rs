@@ -1,7 +1,7 @@
 use crate::parser::parser::runCodeFile;
 use crate::parser::structure::structure::Structure;
 use crate::parser::structure::structureType::StructureType;
-use crate::parser::testing::{checkStructure, writeCodeDir, writeCodeFileTo};
+use crate::parser::testing::{checkStructure, createDirectory, writeCodeFileTo};
 use std::sync::{Arc, RwLock};
 // =================================================================================================
 
@@ -13,10 +13,10 @@ use std::sync::{Arc, RwLock};
 #[test]
 fn simple() -> ()
 {
-  let dir: String = writeCodeDir!();
+  let directory: String = createDirectory!();
 
-  let aPath: String = writeCodeFileTo!(
-    &dir,
+  let testPath: String = writeCodeFileTo!(
+    &directory,
     r#"
     hello() {
       := 42
@@ -24,13 +24,13 @@ fn simple() -> ()
 
     value: Usize = 4
     "#,
-    "a.rt"
+    "test.rt"
   );
 
   let mainPath: String = writeCodeFileTo!(
-    &dir,
+    &directory,
     r#"
-    a := import("./a.rt")
+    a := import("./test.rt")
     "#,
     "main.rt"
   );
@@ -40,23 +40,40 @@ fn simple() -> ()
   checkStructure!(main, "a.hello", stype StructureType::Method);
   checkStructure!(main, "a.value", stype StructureType::Usize, value "4");
 
-  let _ = std::fs::remove_file(&aPath);
+  let _ = std::fs::remove_file(&testPath);
   let _ = std::fs::remove_file(&mainPath);
-  let _ = std::fs::remove_dir(&dir);
+  let _ = std::fs::remove_dir(&directory);
 }
 
-/// Вложенный `import()`: путь считается от файла, где он написан, а не от main.
+// =================================================================================================
+
+/// Вложенный `import()`; Путь считается от файла, где он написан, а не от main.
+///
+/// todo: `bHello := b.hello()` возвращает пустую строку вместо `"b: hello"`.
+///  В `:=` return при вызове метода на модуле — модуль имеет `name = None`,
+///  и `:=` не находит именную структуру для записи result.
 #[test]
 #[ignore]
 fn nested() -> ()
 {
-  let dir: String = writeCodeDir!();
+  let dir: String = createDirectory!();
+
+  // Структура:
+  //   dir/
+  //     main.rt       — импортирует `lib/a.rt` и `lib/deep/c.rt`
+  //     lib/
+  //       a.rt        — импортирует `b.rt`, вызывает `b.hello()`
+  //       b.rt        — `hello() { := "b: hello" }`
+  //       deep/
+  //         c.rt      — импортирует `d.rt`, вызывает `d.hello()`
+  //         d.rt      — `hello() { := "d: hello" }`
+
   let libDir: String = format!("{dir}/lib");
   let deepDir: String = format!("{libDir}/deep");
   std::fs::create_dir_all(&libDir).unwrap();
   std::fs::create_dir_all(&deepDir).unwrap();
 
-  // lib/b.rt — рядом с a.rt.
+  // `lib/b.rt` — рядом с `a.rt`.
   let bPath: String = writeCodeFileTo!(
     &libDir,
     r#"
@@ -67,7 +84,7 @@ fn nested() -> ()
     "b.rt"
   );
 
-  // lib/a.rt — импортирует b.rt из своей папки.
+  // `lib/a.rt` — импортирует `b.rt` из своей папки.
   let aPath: String = writeCodeFileTo!(
     &libDir,
     r#"
@@ -86,7 +103,7 @@ fn nested() -> ()
     "a.rt"
   );
 
-  // lib/deep/d.rt — рядом с c.rt.
+  // `lib/deep/d.rt` — рядом с `c.rt`.
   let dPath: String = writeCodeFileTo!(
     &deepDir,
     r#"
@@ -97,7 +114,7 @@ fn nested() -> ()
     "d.rt"
   );
 
-  // lib/deep/c.rt — импортирует d.rt из своей папки.
+  // `lib/deep/c.rt` — импортирует `d.rt` из своей папки.
   let cPath: String = writeCodeFileTo!(
     &deepDir,
     r#"
@@ -111,7 +128,7 @@ fn nested() -> ()
     "c.rt"
   );
 
-  // main.rt — импортирует a.rt из lib/.
+  // `main.rt` — импортирует `a.rt` из `lib/`.
   let mainPath: String = writeCodeFileTo!(
     &dir,
     r#"
@@ -123,11 +140,11 @@ fn nested() -> ()
 
   let main: Arc<RwLock<Structure>> = runCodeFile(&mainPath);
 
-  // a.rt импортировал b.rt правильно (путь от a.rt, не от main.rt).
+  // `a.rt` импортировал `b.rt`.
   checkStructure!(main, "a.bHello", value "b: hello");
   checkStructure!(main, "a.hello", stype StructureType::Method);
 
-  // c.rt импортировал d.rt правильно (путь от c.rt, не от main.rt).
+  // `c.rt` импортировал `d.rt`.
   checkStructure!(main, "c.dHello", value "d: hello");
   checkStructure!(main, "c.hello", stype StructureType::Method);
 
