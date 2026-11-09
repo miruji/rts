@@ -109,21 +109,21 @@ fn normalizeFloat() -> ()
   let big: &str = "44444444444444444444444444444444444444444444"; // 44 цифры
   normalizeToken(
     TokenType::UInt, big,
-    StructureType::Primitive(PrimitiveType::F32), &f32::MAX.to_string()
+    StructureType::Primitive(PrimitiveType::F32), &format!("{:?}", f32::MAX)
   );
   normalizeToken(
     TokenType::UInt, big,
-    StructureType::Primitive(PrimitiveType::F64), &big.parse::<f64>().unwrap().to_string()
+    StructureType::Primitive(PrimitiveType::F64), &format!("{:?}", big.parse::<f64>().unwrap())
   );
   
   // Бесконечность зажимается в границу типа.
   normalizeToken(
     TokenType::Float, "-1e309",
-    StructureType::Primitive(PrimitiveType::F32), &f32::MIN.to_string()
+    StructureType::Primitive(PrimitiveType::F32), &format!("{:?}", f32::MIN)
   );
   normalizeToken(
     TokenType::UFloat, "1e309",
-    StructureType::Primitive(PrimitiveType::F64), &f64::MAX.to_string()
+    StructureType::Primitive(PrimitiveType::F64), &format!("{:?}", f64::MAX)
   );
   normalizeToken(
     TokenType::UFloat, "1e309",
@@ -297,13 +297,13 @@ fn castFloats() -> ()
     "l: F32 = 44444444444444444444444444444444444444444444", "l",
     type UInt,
     stype F32,
-    value &(usize::MAX as f32).to_string()
+    value &format!("{:?}", usize::MAX as f32)
   );
   checkStructure!(
     "m: F32 = -1.7976931348623157e309", "m",
     type Float,
     stype F32,
-    value "-340282350000000000000000000000000000000"
+    value &format!("{:?}", f32::MIN)
   );
   checkStructure!(
     "n: U8 = 1.7976931348623157e309", "n",

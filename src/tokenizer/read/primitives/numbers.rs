@@ -84,7 +84,7 @@ pub fn getNumber(buffer: &[u8], index: &mut usize, bufferLength: usize) -> Optio
     }
 
     if !negative && buffer[*index] == b'-'
-    { // Int/Float
+    { // `Int`/`Float`
       // Логика тут простая - токенайзер должен вложить минус в число, потому что он рядом.
       // Любое алгебраическое выражение будь то `10-20` - всегда `-20` общая сущность.
       // Поэтому и раскрывается потом как: `10+(-20)`. Поэтому если минус перед числом -
@@ -167,13 +167,19 @@ pub fn getNumber(buffer: &[u8], index: &mut usize, bufferLength: usize) -> Optio
     result = if negative { String::from("-0.0") } else { String::from("0.0") };
   }
 
-  // Каноническая запись: `.0` / `0.` / `0.0` → `0`, `.5` → `0.5`, `3.` → `3`.
-  // print() печатает token data как есть, а не Display от Value.
+  // Каноническая запись через `{:?}` (Debug) для f64: `0.0` → `0.0`, `3.` → `3.0`,
+  // `.5` → `0.5`, `1e3` → `1000.0`, `1e20` → `1e20`. Точка всегда сохраняется
+  // (для целых float'ов), `e`-нотация — только для больших/маленьких чисел.
+  //
+  // Раньше использовался `to_string()` (Display для f64), который выкидывал
+  // точку/`e` для целых float'ов: `1.0` → `"1"`. Из-за этого `data` переставала
+  // round-trip'ить через токенайзер как Float/UFloat — повторное чтение давало
+  // целочисленный тип. `{:?}` сохраняет точку всегда, поэтому тип стабилен.
   if hasDot
   {
     if let Ok(v) = result.parse::<f64>()
     {
-      result = v.to_string();
+      result = format!("{:?}", v);
     }
   }
 
@@ -219,17 +225,17 @@ mod tests
       
       // UFloat
       ("3.14", TokenType::UFloat, "3.14"),
-      ("0.0", TokenType::UFloat, "0"),
-      ("3.", TokenType::UFloat, "3"),
+      ("0.0", TokenType::UFloat, "0.0"),
+      ("3.", TokenType::UFloat, "3.0"),
       (".14", TokenType::UFloat, "0.14"),
-      (".0", TokenType::UFloat, "0"),
-      (".", TokenType::UFloat, "0"),
+      (".0", TokenType::UFloat, "0.0"),
+      (".", TokenType::UFloat, "0.0"),
       
       // Float
       ("-14.3", TokenType::Float, "-14.3"),
       ("-2.5", TokenType::Float, "-2.5"),
       ("-.5", TokenType::Float, "-0.5"),
-      ("-.", TokenType::Float, "-0")
+      ("-.", TokenType::Float, "-0.0")
     ] 
     {
       let buffer: &[u8] = input.as_bytes();
@@ -322,13 +328,13 @@ mod tests
   fn exponential() -> ()
   {
     for (input, expectedType, expectedValue, expectedIndex) in [
-      ("1e3", TokenType::UFloat, "1000", 3),
+      ("1e3", TokenType::UFloat, "1000.0", 3),
       ("1.5e-2", TokenType::UFloat, "0.015", 6),
-      ("-3.14e+10", TokenType::Float, "-31400000000", 9),
-      ("0e0", TokenType::UFloat, "0", 3),
-      ("-1E-5", TokenType::Float, "-0.00001", 5),
-      ("2e+5", TokenType::UFloat, "200000", 4),
-      ("10e-1", TokenType::UFloat, "1", 5)
+      ("-3.14e+10", TokenType::Float, "-31400000000.0", 9),
+      ("0e0", TokenType::UFloat, "0.0", 3),
+      ("-1E-5", TokenType::Float, "-1e-5", 5),
+      ("2e+5", TokenType::UFloat, "200000.0", 4),
+      ("10e-1", TokenType::UFloat, "1.0", 5)
     ] 
     {
       let buffer: &[u8] = input.as_bytes();

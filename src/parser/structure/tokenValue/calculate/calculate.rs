@@ -57,13 +57,26 @@ pub fn calculate(op: &TokenType, leftToken: &Token, rightToken: &Token) -> Token
 
   // -----------------------------------------------------------------------------------------------
   // Получаем значение выражения, а также предварительный тип.
+  //
+  // Float-значения форматируем через `{:?}` (Debug) для f32/f64: он сохраняет
+  // точку для целых float'ов (`1.0` -> `"1.0"`, не `"1"`) и использует `e`-нотацию
+  // только для больших/маленьких чисел. Без этого `Display` (`{}`) выкидывает
+  // точку, и `data` перестаёт round-trip'ить через токенайзер как Float/UFloat.
+  let valueToDataString = |v: Value| -> String {
+    match v
+    {
+      Value::Float(x)  => format!("{:?}", x),
+      Value::UFloat(x) => format!("{:?}", f64::from(x)),
+      other            => other.to_string()
+    }
+  };
   let mut resultType: TokenType = TokenType::UInt;
   let resultValue: String = match *op 
   {
-    TokenType::Plus     => normalizeValue(leftValue + rightValue).to_string(),
-    TokenType::Minus    => normalizeValue(leftValue - rightValue).to_string(),
-    TokenType::Multiply => normalizeValue(leftValue * rightValue).to_string(),
-    TokenType::Divide   => normalizeValue(leftValue / rightValue).to_string(),
+    TokenType::Plus     => valueToDataString(normalizeValue(leftValue + rightValue)),
+    TokenType::Minus    => valueToDataString(normalizeValue(leftValue - rightValue)),
+    TokenType::Multiply => valueToDataString(normalizeValue(leftValue * rightValue)),
+    TokenType::Divide   => valueToDataString(normalizeValue(leftValue / rightValue)),
     _ => "0".to_string(),
   };
   // После того как значение было получено,
