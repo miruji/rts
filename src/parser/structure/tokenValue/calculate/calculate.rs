@@ -5,11 +5,11 @@ use crate::tokenizer::types::token::Token;
 use crate::tokenizer::types::tokenType::TokenType;
 // =================================================================================================
 
-// Это вычисление на основе Value от токенов.
+// Это вычисление на основе `Value` от токенов.
 //
 // Это сама реализация операций математики и логики.
 //
-// Схема такая: calculate -> tokenizer+parser expression -> StructureType -> FFI.
+// Схема такая: `calculate` -> `tokenizer`+`parser` expression -> `StructureType` -> FFI.
 
 // =================================================================================================
 
@@ -57,36 +57,62 @@ pub fn calculate(op: &TokenType, leftToken: &Token, rightToken: &Token) -> Token
 
   // -----------------------------------------------------------------------------------------------
   // Получаем значение выражения, а также предварительный тип.
+  
+  // `float` значения форматируем через `{:?}` для `f32`/`f64`: он сохраняет
+  // точку для целых `float` (`1.0` -> `1.0`, не `1`) и использует `e`-нотацию
+  // только для больших/маленьких чисел.
+  // 
+  // Без этого `Display` (`{}`) выкидывает точку, и `data` неверно будет интерпретироваться
+  // при повторном чтении через токенайзер.
+  let valueToDataString = |v: Value| -> String {
+    match v
+    {
+      Value::Float(x)  => format!("{:?}", x),
+      Value::UFloat(x) => format!("{:?}", f64::from(x)),
+      other            => other.to_string()
+    }
+  };
+  
+  //
   let mut resultType: TokenType = TokenType::UInt;
   let resultValue: String = match *op 
   {
-    TokenType::Plus     => normalizeValue(leftValue + rightValue).to_string(),
-    TokenType::Minus    => normalizeValue(leftValue - rightValue).to_string(),
-    TokenType::Multiply => normalizeValue(leftValue * rightValue).to_string(),
-    TokenType::Divide   => normalizeValue(leftValue / rightValue).to_string(),
+    TokenType::Plus     => valueToDataString(normalizeValue(leftValue + rightValue)),
+    TokenType::Minus    => valueToDataString(normalizeValue(leftValue - rightValue)),
+    TokenType::Multiply => valueToDataString(normalizeValue(leftValue * rightValue)),
+    TokenType::Divide   => valueToDataString(normalizeValue(leftValue / rightValue)),
     _ => "0".to_string(),
   };
-  // После того как значение было получено,
-  // смотрим какой точно тип выдать новому токену.
+
+  // -----------------------------------------------------------------------------------------------
+  // После того как значение было получено, смотрим какой точно тип выдать новому токену.
+  
+  //
   if leftTokenDataType == TokenType::String || rightTokenDataType == TokenType::String
   {
     resultType = TokenType::String;
   } else
+  
+  //
   if matches!(leftTokenDataType, TokenType::Int | TokenType::UInt) &&
-      rightTokenDataType == TokenType::Char
-  { //
+     rightTokenDataType == TokenType::Char
+  {
     resultType = leftTokenDataType;
   } else
+  
+  //
   if leftTokenDataType == TokenType::Char
   {
     resultType = TokenType::Char;
   } else
+  
+  //
   if leftTokenDataType == TokenType::UFloat || rightTokenDataType == TokenType::UFloat
   {
     // Проверяем смену типа;
     //
-    // TokenType::UFloat не ограничен - это тип токена, а не Value::UFloat(uf64).
-    // Ограничение по размеру накладывается структурой (F32/F64), а не здесь.
+    // `TokenType::UFloat` не ограничен - это тип токена, а не `Value::UFloat(uf64)`.
+    // Ограничение по размеру накладывается `StructureType`, а не здесь.
     // Поэтому тип результата зависит только от знака строкового значения.
     if resultValue.starts_with('-') {
       resultType = TokenType::Float;
@@ -94,16 +120,20 @@ pub fn calculate(op: &TokenType, leftToken: &Token, rightToken: &Token) -> Token
       resultType = TokenType::UFloat;
     }
   } else
+  
+  //
   if leftTokenDataType == TokenType::Float || rightTokenDataType == TokenType::Float
   {
     resultType = TokenType::Float;
   } else
+  
+  //
   if leftTokenDataType == TokenType::UInt || rightTokenDataType == TokenType::UInt
   {
     // Проверяем смену типа;
     //
-    // TokenType::UInt не ограничен сверху - это тип токена, а не Value::UInt(u64).
-    // Ограничение по размеру накладывается структурой (USize/ABI), а не здесь.
+    // `TokenType::UInt` не ограничен сверху - это тип токена, а не `Value::UInt(u64)`;
+    // Ограничение по размеру накладывается `StructureType`, а не здесь;
     // Поэтому тип результата зависит только от знака строкового значения.
     if resultValue.starts_with('-') {
       resultType = TokenType::Int;
@@ -111,11 +141,17 @@ pub fn calculate(op: &TokenType, leftToken: &Token, rightToken: &Token) -> Token
       resultType = TokenType::UInt;
     }
   } else
+  
+  //
   if leftTokenDataType == TokenType::Int || rightTokenDataType == TokenType::Int {
     resultType = TokenType::Int;
   }
-  // return
+
+  // -----------------------------------------------------------------------------------------------
+  
+  // Return.
   Token::new(resultType, resultValue)
+  
   // -----------------------------------------------------------------------------------------------
 }
 

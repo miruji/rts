@@ -6,17 +6,25 @@ use crate::tokenizer::types::tokenType::TokenType;
 // =================================================================================================
 
 /// Элементарная единица хранения информации;
+/// 
 /// Представляет strings, numbers, operators и так далее.
 #[derive(Clone)]
-pub struct Token 
+pub struct Token
 {
+  // ===============================================================================================
+  
   /// Данные единицы хранения
-  /// todo В будущем лучше будет хранить более бинарно? (но это сломает абстрактные операции с Token)
+  // 
+  // todo В будущем лучше будет хранить более бинарно? (но это сломает абстрактные операции с Token)
   data: Bytes,
+  
   /// Тип данных единицы хранения
   dataType: TokenType,
+  
   /// Набор вложенных единиц хранения
   pub lines: Option< Vec< Arc<RwLock<Line>> > >,
+  
+  // ===============================================================================================
   
   /// Начало токена для analyzer
   #[cfg(feature = "analyzer")]
@@ -24,13 +32,17 @@ pub struct Token
   /// Конец токена для analyzer
   #[cfg(feature = "analyzer")]
   pub end: usize
+
+  // ===============================================================================================
 }
-impl Token 
+
+impl Token
 {
   /// Обычное создание.
-  pub fn new<T: Into<Bytes>>(dataType: TokenType, data: T) -> Self 
+  pub fn new<T: Into<Bytes>>(dataType: TokenType, data: T) -> Self
   {
-    Self {
+    Self
+    {
       data: data.into(),
       dataType,
       lines: None,
@@ -40,11 +52,13 @@ impl Token
       end: 0
     }
   }
+
+  // ===============================================================================================
   
   /// Пустой, но имеет тип данных.
-  pub const fn newEmpty(dataType: TokenType) -> Self 
+  pub const fn newEmpty(dataType: TokenType) -> Self
   {
-    Self 
+    Self
     {
       data: Bytes::empty(),
       dataType,
@@ -55,6 +69,7 @@ impl Token
       end: 0
     }
   }
+  
   /// Пустой, но выполняет роль держателя вложения.
   pub const fn newNesting(lines: Vec< Arc<RwLock<Line>> >) -> Self
   {
@@ -69,6 +84,8 @@ impl Token
       end: 0
     }
   }
+
+  // ===============================================================================================
 
   /// Глубокое клонирование: `data` и `dataType` по значению,
   /// nested lines — рекурсивно.
@@ -90,17 +107,17 @@ impl Token
     }
   }
 
-  /// convert data.
-  /// 
-  /// todo: фиг его знает что это за ерунда,
-  ///  но смысл такой, что если тип был Int или Float, 
-  ///  а ожидается UInt или UFloat, то понятно,
-  ///  что результат будет 0
-  /// 
-  /// todo По идее это обрубание типов? константановое поведение.
+  // ===============================================================================================
+  
+  // todo: В общем, это был метод, который вручную менял данные под границы текущего `TokenType`.
+  //  Например если `TokenType::UInt` и данные стали отрицательными, а ожидались другие данные,
+  //  то константное поведение сделает `0` и так далее в зависимости от типов.
+  // 
+  // todo: При этом `setData()` и `setDataType()` раздельные вещи. Поэтому в `parser`
+  //  есть участки кода где они пишутся друг за другом.
   const fn convertData(&self) -> ()
   {
-    return; // todo Работает криво например для `Float | F32 = -3.4028234663852886e38` - было 0.0
+    return;
     /*
     match self.data.toString()
     {
@@ -113,9 +130,9 @@ impl Token
           {
             match self.dataType
             {
-              TokenType::UInt  => { self.data = Bytes::from(String::from("0")); }
-              TokenType::Float => { self.data = Bytes::from(String::from("0.0")); } // todo: use . (0.0)
-              _ => { }
+              TokenType::UInt => self.data = Bytes::from(String::from("0")),
+              TokenType::UFloat => self.data = Bytes::from(String::from("0.0")),
+              _ => {}
             }
           }
           _ => {}
@@ -126,11 +143,14 @@ impl Token
     */
   }
 
+  // ===============================================================================================
+
   /// Получает тип данных.
   pub const fn getDataType(&self) -> &TokenType
   {
     &self.dataType
   }
+  
   /// Устанавливает тип данных.
   pub const fn setDataType(&mut self, newDataType: TokenType) -> ()
   {
@@ -138,17 +158,22 @@ impl Token
     self.convertData();
   }
 
+  // ===============================================================================================
+
   /// Получает данные.
   pub fn getData(&self) -> Bytes
   {
     self.data.clone()
   }
+  
   /// Устанавливает данные.
   pub fn setData<T: Into<Bytes>>(&mut self, newData: T)  -> ()
   {
     self.data = newData.into();
     self.convertData();
   }
+  
+  // ===============================================================================================
 }
 
 impl fmt::Display for Token

@@ -329,6 +329,39 @@ impl StructureType
       _ => Self::Primitive(PrimitiveType::None)
     }
   }
+
+  /// Выдаёт `TokenType`, соответствующий текущему `StructureType`:
+  ///
+  /// - `U8`/`U16`/`U32`/`U64`/`Usize` ⟶ `UInt`;
+  /// 
+  /// - `I8`/`I16`/`I32`/`I64`/`Isize` ⟶ `Int`;
+  /// 
+  /// - `F32`/`F64` ⟶ `UFloat` для неотрицательного значения, иначе `Float`;
+  /// 
+  /// - Прочие примитивы ⟶ `None`, тип токена не пересчитывается.
+  pub fn abiTokenType(&self, tokenValue: &str) -> Option<TokenType>
+  {
+    match self
+    {
+      StructureType::Primitive(PrimitiveType::U8) |
+      StructureType::Primitive(PrimitiveType::U16) |
+      StructureType::Primitive(PrimitiveType::U32) |
+      StructureType::Primitive(PrimitiveType::U64) |
+      StructureType::Primitive(PrimitiveType::Usize) => Some(TokenType::UInt),
+      //
+      StructureType::Primitive(PrimitiveType::I8) |
+      StructureType::Primitive(PrimitiveType::I16) |
+      StructureType::Primitive(PrimitiveType::I32) |
+      StructureType::Primitive(PrimitiveType::I64) |
+      StructureType::Primitive(PrimitiveType::Isize) => Some(TokenType::Int),
+      //
+      StructureType::Primitive(PrimitiveType::F32) |
+      StructureType::Primitive(PrimitiveType::F64) =>
+        Some(if tokenValue.starts_with('-') { TokenType::Float } else { TokenType::UFloat }),
+      //
+      _ => None
+    }
+  }
 }
 
 // =================================================================================================
@@ -357,10 +390,10 @@ impl Structure
     }
   }
 
-  /// Приводит данные токена в рамки требуемого [`StructureType`],
+  /// Приводит `Token::data` в рамки требуемого [`StructureType`],
   /// чтобы [`Structure`] смог его хранить;
   /// 
-  /// todo Есть идея ввести на уровне `Structure` в будущем bool,
+  /// todo Есть идея ввести на уровне `Structure` в будущем `bool`,
   ///  чтобы можно было проверить и оптимизировать эту работу.
   pub fn normalizeToken(token: &mut Token, structureType: StructureType) -> ()
   {
@@ -406,14 +439,19 @@ impl Structure
               Some(value) => match structureType 
               {
                 // Для `float` берём величину числа напрямую, без сжатия в `u64`.
+                //
+                // `{:?}` для `f32`/`f64` сохраняет точку для целых `float`:
+                // `1.0` -> `1.0`, не `1`; и использует `e`-нотацию только для
+                // больших/маленьких чисел. Так `data` всегда одинаково проходит 
+                // через токенайзер как `Float`/`UFloat`.
                 StructureType::Primitive(PrimitiveType::F32) => {
                   let floatValue: f64 = tokenData.parse::<f64>().unwrap_or(value as f64)
                     .clamp(f32::MIN as f64, f32::MAX as f64);
-                  token.setData( Bytes::from((floatValue as f32).to_string()) );
+                  token.setData( Bytes::from(format!("{:?}", floatValue as f32)) );
                 }
                 StructureType::Primitive(PrimitiveType::F64) => {
                   let floatValue: f64 = tokenData.parse::<f64>().unwrap_or(value as f64);
-                  token.setData( Bytes::from(floatValue.to_string()) );
+                  token.setData( Bytes::from(format!("{:?}", floatValue)) );
                 }
                 _ => if let Some((_, max)) = Self::integerLimits(structureType) {
                   token.setData( Bytes::from(value.min(max).to_string()) );
@@ -437,14 +475,19 @@ impl Structure
               Some(value) => match structureType 
               {
                 // Для `float` берём величину числа напрямую, без сжатия в `i64`.
+                //
+                // `{:?}` для `f32`/`f64` сохраняет точку для целых `float`:
+                // `1.0` -> `1.0`, не `1`; и использует `e`-нотацию только для
+                // больших/маленьких чисел. Так `data` всегда одинаково проходит 
+                // через токенайзер как `Float`/`UFloat`.
                 StructureType::Primitive(PrimitiveType::F32) => {
                   let floatValue: f64 = tokenData.parse::<f64>().unwrap_or(value as f64)
                     .clamp(f32::MIN as f64, f32::MAX as f64);
-                  token.setData( Bytes::from((floatValue as f32).to_string()) );
+                  token.setData( Bytes::from(format!("{:?}", floatValue as f32)) );
                 }
                 StructureType::Primitive(PrimitiveType::F64) => {
                   let floatValue: f64 = tokenData.parse::<f64>().unwrap_or(value as f64);
-                  token.setData( Bytes::from(floatValue.to_string()) );
+                  token.setData( Bytes::from(format!("{:?}", floatValue)) );
                 }
                 _ => if let Some((min, max)) = Self::integerLimits(structureType) {
                   let normalized: String = 
@@ -474,11 +517,11 @@ impl Structure
               {
                 StructureType::Primitive(PrimitiveType::F32) => {
                   value = value.clamp(f32::MIN as f64, f32::MAX as f64);
-                  token.setData( Bytes::from((value as f32).to_string()) );
+                  token.setData( Bytes::from(format!("{:?}", value as f32)) );
                 }
                 StructureType::Primitive(PrimitiveType::F64) => {
                   value = value.clamp(f64::MIN, f64::MAX);
-                  token.setData( Bytes::from(value.to_string()) );
+                  token.setData( Bytes::from(format!("{:?}", value)) );
                 }
                 // Приведение к целочисленным типам: округление и зажим в границы типа;
                 //

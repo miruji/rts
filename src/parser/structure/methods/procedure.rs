@@ -182,12 +182,29 @@ impl Structure
                       );
                     }
 
-                    // ABI-композит String: .pointer/.length;
-                    // Считаем ДО перемещения токена в lines ниже.
+                    // Приведение меняет значение, но не `TokenType` токена —
+                    // пересчитываем тип под выбранный `StructureType`.
+                    // 
+                    // Иначе `f(n: U8) { = n }` куда передаётся `-10`,
+                    // возвращал бы `Int 0`, и `stype` результата становился `I8`,
+                    // а не `U8`.
+                    {
+                      let targetAbiType: StructureType = calledStructureStructure.dataType.abiType();
+                      let tokenValue: String = token.getData().toString().unwrap_or_default();
+                      if let Some(targetTokenType) = targetAbiType.abiTokenType(&tokenValue) {
+                        token.setDataType(targetTokenType);
+                      }
+                    }
+
+                    // ABI-композит `String`: `.pointer`/`.length`;
+                    //
+                    // Считаем до перемещения токена в lines ниже.
                     let stringFields: Option<[Arc<RwLock<Self>>; 2]> = 
                       if calledStructureStructure.dataType == StructureType::Primitive(PrimitiveType::String) {
                         bridge::stringFields(&token)
-                      } else { None };
+                      } else {
+                        None
+                      };
                     
                     // Устанавливаем lines параметра как линию с одним токеном – переданным значением.
                     calledStructureStructure.lines = Some(vec![
@@ -232,8 +249,11 @@ impl Structure
             _sourcePath.with(|sourcePath|
               *sourcePath.borrow_mut() = previousSourcePath
             );
-            // Переносим result из clone в оригинал, чтобы caller (function.rs)
-            // мог прочитать его через getStructureByScope.
+            // Переносим `result` из clone в оригинал, чтобы caller `function.rs`
+            // мог прочитать его через `getStructureByScope`.
+            //
+            // todo Процедура не должна писать `.result` никогда. Но для `function` можно
+            //  передать флаг сюда - тогда менять логику конкретно под их запуски.
             let clonedResult: Option<Token> = calledClone.read().unwrap().result.clone();
             calledStructureLink.write().unwrap().result = clonedResult;
           }
