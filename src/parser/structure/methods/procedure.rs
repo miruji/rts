@@ -178,7 +178,7 @@ impl Structure
                     { // Нормализуем токен под границы.
                       Self::normalizeToken(
                         &mut token,
-                        calledStructureStructure.dataType.clone()
+                        &calledStructureStructure.dataType
                       );
                     }
 

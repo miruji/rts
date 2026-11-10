@@ -395,7 +395,7 @@ impl Structure
   /// 
   /// todo Есть идея ввести на уровне `Structure` в будущем `bool`,
   ///  чтобы можно было проверить и оптимизировать эту работу.
-  pub fn normalizeToken(token: &mut Token, structureType: StructureType) -> ()
+  pub fn normalizeToken(token: &mut Token, structureType: &StructureType) -> ()
   {
     // Замыкание для перерасчёта `TokenType`.
     let retypeToken = |token: &mut Token, structureType: &StructureType| -> ()
@@ -412,8 +412,8 @@ impl Structure
         tokenData
       } else 
       { // Нет данных.
-        token.setDefaultValue(&structureType);
-        retypeToken(token, &structureType);
+        token.setDefaultValue(structureType);
+        retypeToken(token, structureType);
         return;
       };
 
@@ -446,7 +446,7 @@ impl Structure
             };
             match value 
             {
-              None => token.setDefaultValue(&structureType), // Не распарсилось — базовое значение.
+              None => token.setDefaultValue(structureType), // Не распарсилось — базовое значение.
               Some(value) => match structureType 
               {
                 // Для `float` берём величину числа напрямую, без сжатия в `u64`.
@@ -464,7 +464,7 @@ impl Structure
                   let floatValue: f64 = tokenData.parse::<f64>().unwrap_or(value as f64);
                   token.setData( Bytes::from(format!("{:?}", floatValue)) );
                 }
-                _ => if let Some((_, max)) = Self::integerLimits(&structureType) {
+                _ => if let Some((_, max)) = Self::integerLimits(structureType) {
                   token.setData( Bytes::from(value.min(max).to_string()) );
                 }
               }
@@ -482,7 +482,7 @@ impl Structure
             };
             match value 
             {
-              None => token.setDefaultValue(&structureType), // Не распарсилось — базовое значение.
+              None => token.setDefaultValue(structureType), // Не распарсилось — базовое значение.
               Some(value) => match structureType 
               {
                 // Для `float` берём величину числа напрямую, без сжатия в `i64`.
@@ -500,7 +500,7 @@ impl Structure
                   let floatValue: f64 = tokenData.parse::<f64>().unwrap_or(value as f64);
                   token.setData( Bytes::from(format!("{:?}", floatValue)) );
                 }
-                _ => if let Some((min, max)) = Self::integerLimits(&structureType) {
+                _ => if let Some((min, max)) = Self::integerLimits(structureType) {
                   let normalized: String = 
                     if value < min { min.to_string() } else 
                     if value > 0 && (value as u64) > max { max.to_string() } else 
@@ -521,11 +521,11 @@ impl Structure
               { // `NaN` — базовое значение;
                 //
                 // Бесконечность зажмётся в границы типа.
-                token.setDefaultValue(&structureType);
-                retypeToken(token, &structureType);
+                token.setDefaultValue(structureType);
+                retypeToken(token, structureType);
                 return;
               }
-              match &structureType
+              match structureType
               {
                 StructureType::Primitive(PrimitiveType::F32) => {
                   value = value.clamp(f32::MIN as f64, f32::MAX as f64);
@@ -554,12 +554,12 @@ impl Structure
               }
             } else
             { // Не распарсилось — базовое значение.
-              token.setDefaultValue(&structureType);
+              token.setDefaultValue(structureType);
             }
           }
           _ => 
           { // Здесь пытаются прировнять что-то не то.
-            token.setDefaultValue(&structureType);
+            token.setDefaultValue(structureType);
           }
           //
         }
@@ -571,7 +571,7 @@ impl Structure
     }
 
     // Пересчёт `TokenType`.
-    retypeToken(token, &structureType);
+    retypeToken(token, structureType);
   }
 }
 

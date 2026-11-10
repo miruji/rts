@@ -551,7 +551,7 @@ fn linearStructure(lineTokens: &[Token], parentLink: Arc<RwLock<Structure>>, isB
         structureType = value.getStructureType();
       } else 
       { // Требуется выполнить преобразование в указанный тип данных.
-        Structure::normalizeToken(&mut value, structureType.clone());
+        Structure::normalizeToken(&mut value, &structureType);
       }
 
       //

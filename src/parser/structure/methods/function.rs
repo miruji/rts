@@ -537,7 +537,7 @@ impl Function
           value[i].setData( token.getData().toString().unwrap_or_default() );
         } else
         { // Остальные примитивы приводятся по своим границам.
-          Structure::normalizeToken(&mut token, structureType.clone());
+          Structure::normalizeToken(&mut token, &structureType);
           value[i].setDataType(*token.getDataType());
           value[i].setData(token.getData());
         }

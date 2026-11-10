@@ -454,7 +454,7 @@ impl Structure
     // Тип значения уже совпадает с `вариантом` — приводить нечего,
     // иначе зажимаем значение в границы `варианта`.
     if natural != variant && variant != StructureType::Primitive(PrimitiveType::Any) {
-      Self::normalizeToken(token, variant.clone());
+      Self::normalizeToken(token, &variant);
     }
 
     variant
