@@ -538,19 +538,6 @@ impl Function
         } else
         { // Остальные примитивы приводятся по своим границам.
           Structure::normalizeToken(&mut token, structureType.clone());
-          
-          // Приведение меняет значение, но не `TokenType` токена —
-          // пересчитываем тип под целевой `StructureType`.
-          // 
-          // Иначе `:= U8(-10)` оставалось бы `Int 0`,
-          // и `stype` после `:=` становился `I8`, а не `U8`;
-          // а `:= F64(3)` оставалось `UInt 3.0`.
-          let tokenValue: String = token.getData().toString().unwrap_or_default();
-          if let Some(targetTokenType) = structureType.abiTokenType(&tokenValue) {
-            token.setDataType(targetTokenType);
-          }
-          
-          //
           value[i].setDataType(*token.getDataType());
           value[i].setData(token.getData());
         }

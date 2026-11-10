@@ -219,7 +219,7 @@ fn castInteger() -> ()
   );
   checkStructure!(
     "b: U8 = -10", "b",
-    type Int,
+    type UInt,
     stype U8,
     value "0"
   );
@@ -263,7 +263,7 @@ fn castBigNumbers() -> ()
   );
   checkStructure!(
     "h: I8 = 44444444444444444444444444444444444444444444", "h",
-    type UInt,
+    type Int,
     stype I8,
     value "127"
   );
@@ -295,7 +295,7 @@ fn castFloats() -> ()
   // а `l: F32 =` приводит уже обрубленное значение к `f32`.
   checkStructure!(
     "l: F32 = 44444444444444444444444444444444444444444444", "l",
-    type UInt,
+    type UFloat,
     stype F32,
     value &format!("{:?}", usize::MAX as f32)
   );
@@ -307,7 +307,7 @@ fn castFloats() -> ()
   );
   checkStructure!(
     "n: U8 = 1.7976931348623157e309", "n",
-    type UFloat,
+    type UInt,
     stype U8,
     value "255"
   );
@@ -321,49 +321,49 @@ fn castFloatToInteger() -> ()
 {
   checkStructure!(
     "q: I8 = 5.4", "q",
-    type UFloat,
+    type Int,
     stype I8,
     value "5"
   );
   checkStructure!(
     "r: I8 = 5.5", "r",
-    type UFloat,
+    type Int,
     stype I8,
     value "6")
   ;
   checkStructure!(
     "s: U8 = -10.0", "s",
-    type Float,
+    type UInt,
     stype U8,
     value "0"
   );
   checkStructure!(
     "t: U8 = -5.5", "t",
-    type Float,
+    type UInt,
     stype U8,
     value "0"
   );
   checkStructure!(
     "u: I8 = -5.5", "u",
-    type Float,
+    type Int,
     stype I8,
     value "-6"
   );
   checkStructure!(
     "v: I8 = -5.4", "v",
-    type Float,
+    type Int,
     stype I8,
     value "-5"
   );
   checkStructure!(
     "w: I8 = -200.5", "w",
-    type Float,
+    type Int,
     stype I8,
     value "-128"
   );
   checkStructure!(
     "x: I64 = -1000000.7", "x",
-    type Float,
+    type Int,
     stype I64,
     value "-1000001"
   );
