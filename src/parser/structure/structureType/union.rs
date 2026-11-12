@@ -363,7 +363,7 @@ impl StructureType
 
 // =================================================================================================
 
-impl Structure
+impl StructureType
 {
   /// Подбирает `вариант` для `union` под значение токена.
   ///
@@ -377,9 +377,9 @@ impl Structure
   ///
   /// `None` не нужно указывать в объединении: это скрытый вариант, он выбирается
   /// всегда, когда не подошёл ни один из указанных или при неудаче.
-  pub fn matchUnion(token: &mut Token, union: &StructureType) -> StructureType
+  pub fn matchUnion(&self, token: &mut Token) -> StructureType
   {
-    let variants: Vec<StructureType> = union.variants();
+    let variants: Vec<StructureType> = self.variants();
 
     // Пустой `union` - тип не указан, значение идёт как есть.
     if variants.is_empty() {
@@ -425,15 +425,15 @@ impl Structure
   ///
   /// Значение, не подходящее ни к одному `варианту`, становится `None` —
   /// ровно так же, как неудачное приведение к обычному типу.
-  pub fn normalizeUnion(token: &mut Token, union: &StructureType) -> StructureType
+  pub fn normalizeUnion(&self, token: &mut Token) -> StructureType
   {
-    let variants: Vec<StructureType> = union.variants();
+    let variants: Vec<StructureType> = self.variants();
 
     if variants.is_empty() {
       return token.getStructureType();
     }
 
-    let variant: StructureType = Self::matchUnion(token, &StructureType::Union(variants));
+    let variant: StructureType = StructureType::Union(variants).matchUnion(token);
     let natural: StructureType = StructureType::naturalType(token);
 
     // `Примитив-значение` - выбранный вариант типизации: токен (значение) не трогаем,
@@ -454,7 +454,7 @@ impl Structure
     // Тип значения уже совпадает с `вариантом` — приводить нечего,
     // иначе зажимаем значение в границы `варианта`.
     if natural != variant && variant != StructureType::Primitive(PrimitiveType::Any) {
-      Self::normalizeToken(token, &variant);
+      variant.normalizeToken(token);
     }
 
     variant

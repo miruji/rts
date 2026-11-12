@@ -550,8 +550,8 @@ impl Structure
             structure.dataType = rightPartValue.getStructureType();
           } else
           {
-            structure.dataType = 
-              Self::normalizeUnion(&mut rightPartValue, &StructureType::Union(variants));
+            structure.dataType =
+              StructureType::Union(variants).normalizeUnion(&mut rightPartValue);
           }
         None => 
           if structure.dataType == StructureType::Primitive(PrimitiveType::None) ||
@@ -564,7 +564,7 @@ impl Structure
           } else
           { // Требуется выполнить преобразование в указанный тип данных.
             // Primitive → natural ABI-форма (normalizeToken не знает примитивов).
-            Self::normalizeToken(&mut rightPartValue, &structure.dataType.abiType())
+            structure.dataType.abiType().normalizeToken(&mut rightPartValue)
           }
       }
 

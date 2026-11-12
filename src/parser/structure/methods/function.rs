@@ -522,7 +522,7 @@ impl Function
       
       Some(mut token) =>
       { // Единое приведение: то же, что при типизации параметров `abc(a: U8)`.
-        Structure::castToken(&mut token, &structureType);
+        structureType.castToken(&mut token);
         
         value[i].setDataType(*token.getDataType());
         value[i].setData(token.getData());

@@ -23,7 +23,7 @@ fn normalizeToken(
 ) -> ()
 {
   let mut token: Token = Token::new(tokenType, String::from(data));
-  Structure::normalizeToken(&mut token, &structureType);
+  structureType.normalizeToken(&mut token);
   let tokenData: String = token.getData().toString().unwrap_or_default();
   assert!(
     tokenData == expectedData,

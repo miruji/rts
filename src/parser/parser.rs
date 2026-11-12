@@ -534,24 +534,22 @@ fn linearStructure(lineTokens: &[Token], parentLink: Arc<RwLock<Structure>>, isB
           // поэтому объединение можно указать, но оно ничего не ограничивает (#22).
           structureType = value.getStructureType();
         } else
-        {
-          structureType = Structure::normalizeUnion(&mut value,
-            &StructureType::Union(variants)
-          );
+        { // todo сюда desc бы?
+          structureType = StructureType::Union(variants).normalizeUnion(&mut value);
         }
       } else
       if structureType == StructureType::Primitive(PrimitiveType::None)
-      { // Тип вычисляется если он не был изначально определён.
+      { // Тип вычисляется если он не был изначально определён;
         // Вычисляется он по типу из результата правой части выражения.
         structureType = value.getStructureType();
       } else
       if structureMutability == StructureMut::Dynamic
-      { // Тип вычисляется, если флаг изменяемости Dynamic.
+      { // Тип вычисляется, если флаг изменяемости Dynamic;
         // Вычисляется он по типу из результата правой части выражения.
         structureType = value.getStructureType();
       } else 
       { // Требуется выполнить преобразование в указанный тип данных.
-        Structure::normalizeToken(&mut value, &structureType);
+        structureType.normalizeToken(&mut value);
       }
 
       //

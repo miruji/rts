@@ -182,8 +182,7 @@ impl Structure
                     { // Одиночный тип параметра: `n: U8`.
                       calledStructureStructure.dataType.clone()
                     };
-                    calledStructureStructure.dataType =
-                      Self::castToken(&mut token, &parameterType);
+                    calledStructureStructure.dataType = parameterType.castToken(&mut token);
 
                     // ABI-композит `String`: `.pointer`/`.length`;
                     //
