@@ -284,95 +284,118 @@ enum CastFrame
   Float64
 }
 
-impl CastFrame
+/// Значение токена - как число.
+///
+/// Читается по виду данных токена (`TokenType`): целое - точно, `float` - с дробью.
+///
+/// У целых два числа: точное значение и величина из данных токена.
+enum Number
 {
   /// Беззнаковое значение -> в рамку.
   ///
   /// `text` - данные токена: для `float` величина берётся из них, а не из
   /// уже насыщенного `u64` - токен бесконечен, и число может быть больше.
-  fn setUnsigned(&self, token: &mut Token, value: u64, text: &str) -> ()
-  {
-    match *self
-    {
-      CastFrame::Integer(_, max) =>
-      {
-        token.setData( Bytes::from(value.min(max).to_string()) );
-      }
-      CastFrame::Float32 | CastFrame::Float64 =>
-      { // Для `float` берём величину числа напрямую, без сжатия в `u64`.
-        self.setFloat(token, text.parse::<f64>().ok().unwrap_or(value as f64));
-      }
-    }
-  }
+  Unsigned(u64, f64),
 
   /// Знаковое значение -> в рамку.
   ///
   /// `text` - данные токена: для `float` величина берётся из них, а не из
   /// уже насыщенного `i64` - токен бесконечен, и число может быть больше.
-  fn setInteger(&self, token: &mut Token, value: i64, text: &str) -> ()
-  {
-    match *self
-    {
-      CastFrame::Integer(min, max) =>
-      {
-        let normalized: String =
-          if value < min {
-            min.to_string()
-          } else if value > 0 && (value as u64) > max {
-            max.to_string()
-          } else {
-            value.to_string()
-          };
-        token.setData( Bytes::from(normalized) );
-      }
-      CastFrame::Float32 | CastFrame::Float64 =>
-      { // Для `float` берём величину числа напрямую, без сжатия в `i64`.
-        self.setFloat(token, text.parse::<f64>().ok().unwrap_or(value as f64));
-      }
-    }
-  }
+  Signed(i64, f64),
 
   /// Значение с плавающей точкой -> в рамку.
-  fn setFloat(&self, token: &mut Token, value: f64) -> ()
+  Float(f64)
+}
+
+impl Number
+{
+  /// Величина из данных токена.
+  fn magnitude(&self) -> f64
   {
     match *self
     {
-      CastFrame::Integer(min, max) =>
-      {
-        // Приведение к целочисленным типам: округление и зажим в границы типа;
-        //
-        // Отрицательное значение остаётся, если тип его принимает (`I8 = -5.5` -> `-6`),
-        // а для беззнаковых типов оно становится 0 (`U8 = -5.5` -> `0`).
-        let rounded: f64 = value.round();
-        let normalized: String = if rounded < 0.0
-        { // Приведение `f64` в `i64` насыщается само, `inf` тоже.
-          // todo Тут упомянут `inf` - нужно разобраться т.к. его нет в RTS.
-          (rounded as i64).max(min).to_string()
-        } else
-        { // todo Тут бы desc как сделано в ветке сверху?
-          (rounded as u64).min(max).to_string()
-        };
-        token.setData( Bytes::from(normalized) );
-      }
-      //
-      // `{:?}` для `f32`/`f64` сохраняет точку для целых `float`:
-      // `1.0` -> `1.0`, не `1`; и использует `e`-нотацию только для
-      // больших/маленьких чисел. Так `data` всегда одинаково проходит 
-      // через токенайзер как `Float`/`UFloat`.
-      CastFrame::Float32 =>
-      {
-        let floatValue: f64 = value.clamp(f32::MIN as f64, f32::MAX as f64);
-        token.setData( Bytes::from(format!("{:?}", floatValue as f32)) );
-      }
-      //
-      CastFrame::Float64 =>
-      {
-        let floatValue: f64 = value.clamp(f64::MIN, f64::MAX);
-        token.setData( Bytes::from(format!("{:?}", floatValue)) );
-      }
+      Number::Unsigned(_, magnitude) => magnitude,
+      Number::Signed(_, magnitude) => magnitude,
+      Number::Float(value) => value,
     }
   }
+}
 
+impl CastFrame
+{
+  /// Положить число в рамку.
+  ///
+  /// `number` - прочитанное по виду данных токена число.
+  fn setNumber(&self, token: &mut Token, number: Number) -> ()
+  {
+    match *self
+    {
+      // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+      
+      CastFrame::Integer(min, max) => match number
+      {
+        Number::Unsigned(value, _) =>
+          token.setData( Bytes::from(value.min(max).to_string()) ),
+        //
+        Number::Signed(value, _) =>
+        {
+          let normalized: String =
+            if value < min {
+              min.to_string()
+            } else if value > 0 && (value as u64) > max {
+              max.to_string()
+            } else {
+              value.to_string()
+            };
+          token.setData( Bytes::from(normalized) );
+        }
+        //
+        Number::Float(value) =>
+        {
+          // Приведение к целочисленным типам: округление и зажим в границы типа;
+          //
+          // Отрицательное значение остаётся, если тип его принимает (`I8 = -5.5` -> `-6`),
+          // а для беззнаковых типов оно становится 0 (`U8 = -5.5` -> `0`).
+          let rounded: f64 = value.round();
+          let normalized: String = if rounded < 0.0
+          { // Приведение `f64` в `i64` насыщается само, `inf` тоже.
+            // todo Тут упомянут `inf` - нужно разобраться т.к. его нет в RTS.
+            (rounded as i64).max(min).to_string()
+          } else
+          { // todo Тут бы desc как сделано в ветке сверху?
+            (rounded as u64).min(max).to_string()
+          };
+          token.setData( Bytes::from(normalized) );
+        }
+      }
+      
+      // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+      
+      CastFrame::Float32 =>
+      {
+        let floatValue: f64 = number.magnitude().clamp(f32::MIN as f64, f32::MAX as f64);
+        // `{:?}` для `f32`/`f64` сохраняет точку для целых `float`:
+        // `1.0` -> `1.0`, не `1`; и использует `e`-нотацию только для
+        // больших/маленьких чисел. Так `data` всегда одинаково проходит 
+        // через токенайзер как `Float`/`UFloat`.
+        token.setData( Bytes::from(format!("{:?}", floatValue as f32)) );
+      }
+      
+      // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+      
+      CastFrame::Float64 =>
+      {
+        let floatValue: f64 = number.magnitude().clamp(f64::MIN, f64::MAX);
+        // `{:?}` для `f32`/`f64` сохраняет точку для целых `float`:
+        // `1.0` -> `1.0`, не `1`; и использует `e`-нотацию только для
+        // больших/маленьких чисел. Так `data` всегда одинаково проходит 
+        // через токенайзер как `Float`/`UFloat`.
+        token.setData( Bytes::from(format!("{:?}", floatValue)) );
+      }
+      
+      // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    }
+  }
 }
 
 // =================================================================================================
@@ -608,7 +631,12 @@ impl StructureType
           match value
           {
             None => self.setTokenDefault(token), // Не распарсилось — базовое значение.
-            Some(value) => frame.setUnsigned(token, value, &tokenData)
+            Some(value) =>
+            {
+              // Для `float` берём величину числа напрямую, без сжатия в `u64`.
+              let magnitude: f64 = tokenData.parse::<f64>().ok().unwrap_or(value as f64);
+              frame.setNumber(token, Number::Unsigned(value, magnitude))
+            }
           }
         }
 
@@ -629,7 +657,12 @@ impl StructureType
           match value
           {
             None => self.setTokenDefault(token), // Не распарсилось — базовое значение.
-            Some(value) => frame.setInteger(token, value, &tokenData)
+            Some(value) =>
+            {
+              // Для `float` берём величину числа напрямую, без сжатия в `i64`.
+              let magnitude: f64 = tokenData.parse::<f64>().ok().unwrap_or(value as f64);
+              frame.setNumber(token, Number::Signed(value, magnitude))
+            }
           }
         }
 
@@ -653,7 +686,7 @@ impl StructureType
               return;
             }
 
-            frame.setFloat(token, value);
+            frame.setNumber(token, Number::Float(value));
           } else
           { // Не распарсилось — базовое значение.
             self.setTokenDefault(token);
