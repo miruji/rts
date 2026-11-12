@@ -521,26 +521,11 @@ impl Function
       // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
       
       Some(mut token) =>
-      {
-        if structureType == StructureType::Primitive(PrimitiveType::None)
-        { // `None` - это отсутствие значения, а не значение.
-          value[i].setDataType(TokenType::None);
-          value[i].setData(None);
-        } else
-        if structureType == StructureType::Primitive(PrimitiveType::String) ||
-           structureType == StructureType::Primitive(PrimitiveType::RawString)
-        { // Значение становится строкой: `String(5)` - это "5".
-          value[i].setDataType(
-            if structureType == StructureType::Primitive(PrimitiveType::String)
-            { TokenType::String } else { TokenType::RawString }
-          );
-          value[i].setData( token.getData().toString().unwrap_or_default() );
-        } else
-        { // Остальные примитивы приводятся по своим границам.
-          Structure::normalizeToken(&mut token, &structureType);
-          value[i].setDataType(*token.getDataType());
-          value[i].setData(token.getData());
-        }
+      { // Единое приведение: то же, что при типизации параметров `abc(a: U8)`.
+        Structure::castToken(&mut token, &structureType);
+        
+        value[i].setDataType(*token.getDataType());
+        value[i].setData(token.getData());
       }
 
       // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

@@ -573,6 +573,67 @@ impl Structure
     // Пересчёт `TokenType`.
     retypeToken(token, structureType);
   }
+
+  // ===============================================================================================
+
+  /// Приводит токен-значение к [`StructureType`] - единая точка приведения.
+  ///
+  /// Метод приведения `U8(a)` и типизация параметров `abc(a: U8)` - одинаковые
+  /// вещи, поэтому обе идут через эту функцию: границы значений и пересчёт
+  /// типа токена у них всегда одни и те же.
+  ///
+  /// - `Union` - вариант подбирается по значению, приведение к нему
+  ///   (`normalizeUnion`);
+  ///
+  /// - `None` - это отсутствие значения, а не значение: токен очищается,
+  ///   как у `None(a)`;
+  ///
+  /// - `String`/`RawString` - значение становится строкой этого типа:
+  ///   `String(5)` - это `"5"`;
+  ///
+  /// - Остальные примитивы приводятся по своим границам (`normalizeToken`).
+  ///
+  /// Возвращает тип после приведения - как `normalizeUnion`: для параметра
+  /// процедуры это его `dataType`; Для одиночного типа это сам `structureType`.
+  pub fn castToken(token: &mut Token, structureType: &StructureType) -> StructureType
+  {
+    // Объединение `a: U8 | String`: вариант подбирается по значению.
+    if let StructureType::Union(_) = structureType
+    {
+      return Self::normalizeUnion(token, structureType);
+    }
+
+    // `None` - отсутствие значения: `abc(a: None)` и `None(a)` очищают токен.
+    if structureType == &StructureType::Primitive(PrimitiveType::None)
+    {
+      token.setDataType(TokenType::None);
+      token.setData(None);
+      return structureType.clone();
+    }
+
+    // Строки: значение становится строкой этого типа, как `String(5)` - `"5"`.
+    if matches!(
+      structureType,
+      StructureType::Primitive(PrimitiveType::String) |
+      StructureType::Primitive(PrimitiveType::RawString)
+    )
+    {
+      let data: String = token.getData().toString().unwrap_or_default();
+      token.setDataType(
+        if *structureType == StructureType::Primitive(PrimitiveType::String)
+        { TokenType::String }
+        else { TokenType::RawString }
+      );
+      token.setData(data);
+      return structureType.clone();
+    }
+
+    // Остальное - по границам `StructureType`.
+    Self::normalizeToken(token, structureType);
+    structureType.clone()
+  }
+
+  // ===============================================================================================
 }
 
 // =================================================================================================

@@ -165,22 +165,25 @@ impl Structure
                     // Забираем токен один раз
                     let mut token: Token = parametersValues[idx].take().unwrap(); // Здесь токен еще точно есть.
                     
-                    // Нормализируем под тип параметра.
+                    // Приводим значение под тип параметра.
+                    //
+                    // Единое приведение с методом `U8(a)`: `abc(a: U8)` и `U8(a)`
+                    // - одинаковые вещи, поэтому границы значения и пересчёт типа
+                    // токена всегда те же (`Structure::castToken`).
                     //
                     // todo:
                     //  Кстати не должен ли getAllExpressions сам делать приведение?
                     //  Много таких мест в коде с params.
-                    if let Some(variants) = calledStructureStructure.unionTypes.clone()
+                    let parameterType: StructureType =
+                      if let Some(variants) = calledStructureStructure.unionTypes.clone()
                     { // Объединение `n: U8 | String`: под каждый вызов подбирается свой вариант.
-                      calledStructureStructure.dataType =
-                        Self::normalizeUnion(&mut token, &StructureType::Union(variants));
+                      StructureType::Union(variants)
                     } else
-                    { // Нормализуем токен под границы.
-                      Self::normalizeToken(
-                        &mut token,
-                        &calledStructureStructure.dataType
-                      );
-                    }
+                    { // Одиночный тип параметра: `n: U8`.
+                      calledStructureStructure.dataType.clone()
+                    };
+                    calledStructureStructure.dataType =
+                      Self::castToken(&mut token, &parameterType);
 
                     // ABI-композит `String`: `.pointer`/`.length`;
                     //
