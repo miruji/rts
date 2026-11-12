@@ -300,7 +300,7 @@ impl CastFrame
       }
       CastFrame::Float32 | CastFrame::Float64 =>
       { // Для `float` берём величину числа напрямую, без сжатия в `u64`.
-        self.setFloatValue(token, text.parse::<f64>().ok().unwrap_or(value as f64));
+        self.setFloat(token, text.parse::<f64>().ok().unwrap_or(value as f64));
       }
     }
   }
@@ -327,7 +327,7 @@ impl CastFrame
       }
       CastFrame::Float32 | CastFrame::Float64 =>
       { // Для `float` берём величину числа напрямую, без сжатия в `i64`.
-        self.setFloatValue(token, text.parse::<f64>().ok().unwrap_or(value as f64));
+        self.setFloat(token, text.parse::<f64>().ok().unwrap_or(value as f64));
       }
     }
   }
@@ -355,22 +355,10 @@ impl CastFrame
         token.setData( Bytes::from(normalized) );
       }
       //
-      CastFrame::Float32 | CastFrame::Float64 =>
-      {
-        self.setFloatValue(token, value);
-      }
-    }
-  }
-
-  /// Значение с плавающей точкой -> в `float`-рамку.
-  fn setFloatValue(&self, token: &mut Token, value: f64) -> ()
-  {
-    // `{:?}` для `f32`/`f64` сохраняет точку для целых `float`:
-    // `1.0` -> `1.0`, не `1`; и использует `e`-нотацию только для
-    // больших/маленьких чисел. Так `data` всегда одинаково проходит 
-    // через токенайзер как `Float`/`UFloat`.
-    match *self
-    {
+      // `{:?}` для `f32`/`f64` сохраняет точку для целых `float`:
+      // `1.0` -> `1.0`, не `1`; и использует `e`-нотацию только для
+      // больших/маленьких чисел. Так `data` всегда одинаково проходит 
+      // через токенайзер как `Float`/`UFloat`.
       CastFrame::Float32 =>
       {
         let floatValue: f64 = value.clamp(f32::MIN as f64, f32::MAX as f64);
@@ -382,10 +370,9 @@ impl CastFrame
         let floatValue: f64 = value.clamp(f64::MIN, f64::MAX);
         token.setData( Bytes::from(format!("{:?}", floatValue)) );
       }
-      //
-      _ => {}
     }
   }
+
 }
 
 // =================================================================================================
