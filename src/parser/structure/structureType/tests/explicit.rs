@@ -1,4 +1,3 @@
-use crate::parser::structure::structure::Structure;
 use crate::parser::structure::structureType::{PrimitiveType, StructureType};
 use crate::parser::testing::checkStructure;
 use crate::tokenizer::types::token::Token;

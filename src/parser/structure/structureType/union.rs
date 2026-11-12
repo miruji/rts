@@ -1,8 +1,6 @@
 use super::structureType::{PrimitiveValueKind, PrimitiveType, StructureType};
-use crate::parser::structure::structure::Structure;
 use crate::tokenizer::types::token::Token;
 use crate::tokenizer::types::tokenType::TokenType;
-
 // =================================================================================================
 
 // Логика `union` для типизации структур.
@@ -365,6 +363,8 @@ impl StructureType
 
 impl StructureType
 {
+  // ===============================================================================================
+  
   /// Подбирает `вариант` для `union` под значение токена.
   ///
   /// Порядок такой же, как при объявлении обычного типа:
@@ -379,16 +379,21 @@ impl StructureType
   /// всегда, когда не подошёл ни один из указанных или при неудаче.
   pub fn matchUnion(&self, token: &mut Token) -> StructureType
   {
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    
     let variants: Vec<StructureType> = self.variants();
 
     // Пустой `union` - тип не указан, значение идёт как есть.
     if variants.is_empty() {
       return token.getStructureType();
     }
+    
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-    // 0. Примитив-значение: только точное совпадение, и раньше типов - `a: U8 | 10 = 10`
-    //    сохраняет именно значение `10`, а не просто "число, помещающееся в U8".
-    //    Проверка идёт до `naturalType`, пока токен не зажат границами.
+    // Примитив-значение: только точное совпадение, и раньше типов - `a: U8 | 10 = 10`
+    // сохраняет именно значение `10`, а не просто "число, помещающееся в U8".
+    //
+    // Проверка идёт до `naturalType`, пока токен не зажат границами.
     for variant in variants.iter()
     {
       if variant.acceptsValue(token) {
@@ -396,14 +401,19 @@ impl StructureType
       }
     }
 
-    // 1. Значение уже имеет подходящий тип — приведение не нужно.
-    //    Именно поэтому `a: U8 | I8 = -10` даёт `I8`, а не зажатое в `U8` ноль.
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    
+    // Значение уже имеет подходящий тип — приведение не нужно.
+    //
+    // Именно поэтому `a: U8 | I8 = -10` даёт `I8`, а не зажатое в `U8` ноль.
     let natural: StructureType = StructureType::naturalType(token);
     if variants.contains(&natural) {
       return natural;
     }
 
-    // 2. Ничего не подошло — приводим в первый подходящий вариант.
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+    // Ничего не подошло — приводим в первый подходящий вариант.
     for variant in variants.iter()
     { // `Any` принимает что угодно.
       if variant == &StructureType::Primitive(PrimitiveType::Any) {
@@ -417,8 +427,12 @@ impl StructureType
       }
     }
 
-    // 3. Ни один `вариант` не подошёл и привести нельзя — константное поведение на `None`.
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+    // Ни один `вариант` не подошёл и привести нельзя — константное поведение на `None`.
     StructureType::Primitive(PrimitiveType::None)
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   }
 
   /// Приводит токен к одному из `вариантов` для `union`.
@@ -427,21 +441,22 @@ impl StructureType
   /// ровно так же, как неудачное приведение к обычному типу.
   pub fn normalizeUnion(&self, token: &mut Token) -> StructureType
   {
-    let variants: Vec<StructureType> = self.variants();
-
-    if variants.is_empty() {
-      return token.getStructureType();
-    }
-
-    let variant: StructureType = StructureType::Union(variants).matchUnion(token);
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    
+    let variant: StructureType = self.matchUnion(token);
     let natural: StructureType = StructureType::naturalType(token);
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
     // `Примитив-значение` - выбранный вариант типизации: токен (значение) не трогаем,
     // `dataType`/`stype` становится самим примитивом (`a: 10 | 20 = 10` -> `stype 10`).
+    //
     // ABI-форма — через `abiType()` там, где нужен `String/U8/...`.
     if matches!(variant, StructureType::PrimitiveValue(..)) {
       return variant;
     }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
     // Не подошло ни к одному `варианту` — токен очищается.
     if variant == StructureType::Primitive(PrimitiveType::None)
@@ -451,14 +466,22 @@ impl StructureType
       return variant;
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
     // Тип значения уже совпадает с `вариантом` — приводить нечего,
     // иначе зажимаем значение в границы `варианта`.
     if natural != variant && variant != StructureType::Primitive(PrimitiveType::Any) {
       variant.normalizeToken(token);
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
     variant
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   }
+
+  // ===============================================================================================
 }
 
 // =================================================================================================

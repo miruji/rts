@@ -167,12 +167,8 @@ impl Structure
                     
                     // Приводим значение под тип параметра.
                     //
-                    // Единое приведение с методом `U8(a)`: `abc(a: U8)` и `U8(a)`
-                    // - одинаковые вещи, поэтому границы значения и пересчёт типа
-                    // токена всегда те же (`Structure::castToken`).
-                    //
                     // todo:
-                    //  Кстати не должен ли getAllExpressions сам делать приведение?
+                    //  Кстати не должен ли `getAllExpressions()` сам делать приведение?
                     //  Много таких мест в коде с params.
                     let parameterType: StructureType =
                       if let Some(variants) = calledStructureStructure.unionTypes.clone()

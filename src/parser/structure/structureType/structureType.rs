@@ -1,5 +1,4 @@
 use crate::parser::bytes::Bytes;
-use crate::parser::structure::structure::Structure;
 use crate::tokenizer::types::token::Token;
 use crate::tokenizer::types::tokenType::TokenType;
 use serde::{Deserialize, Serialize};
@@ -409,7 +408,7 @@ impl StructureType
         tokenData
       } else 
       { // Нет данных.
-        token.setDefaultValue(self);
+        self.setTokenDefault(token);
         retypeToken(token, self);
         return;
       };
@@ -443,7 +442,7 @@ impl StructureType
             };
             match value 
             {
-              None => token.setDefaultValue(self), // Не распарсилось — базовое значение.
+              None => self.setTokenDefault(token), // Не распарсилось — базовое значение.
               Some(value) => match self 
               {
                 // Для `float` берём величину числа напрямую, без сжатия в `u64`.
@@ -461,7 +460,7 @@ impl StructureType
                   let floatValue: f64 = tokenData.parse::<f64>().unwrap_or(value as f64);
                   token.setData( Bytes::from(format!("{:?}", floatValue)) );
                 }
-                _ => if let Some((_, max)) = Self::integerLimits(self) {
+                _ => if let Some((_, max)) = self.integerLimits() {
                   token.setData( Bytes::from(value.min(max).to_string()) );
                 }
               }
@@ -479,7 +478,7 @@ impl StructureType
             };
             match value 
             {
-              None => token.setDefaultValue(self), // Не распарсилось — базовое значение.
+              None => self.setTokenDefault(token), // Не распарсилось — базовое значение.
               Some(value) => match self 
               {
                 // Для `float` берём величину числа напрямую, без сжатия в `i64`.
@@ -497,7 +496,7 @@ impl StructureType
                   let floatValue: f64 = tokenData.parse::<f64>().unwrap_or(value as f64);
                   token.setData( Bytes::from(format!("{:?}", floatValue)) );
                 }
-                _ => if let Some((min, max)) = Self::integerLimits(self)
+                _ => if let Some((min, max)) = self.integerLimits()
                 {
                   let normalized: String = 
                     if value < min { min.to_string() } else 
@@ -519,7 +518,7 @@ impl StructureType
               { // `NaN` — базовое значение;
                 //
                 // Бесконечность зажмётся в границы типа.
-                token.setDefaultValue(self);
+                self.setTokenDefault(token);
                 retypeToken(token, self);
                 return;
               }
@@ -554,18 +553,19 @@ impl StructureType
               }
             } else
             { // Не распарсилось — базовое значение.
-              token.setDefaultValue(self);
+              self.setTokenDefault(token);
             }
           }
           _ => 
           { // Здесь пытаются прировнять что-то не то.
-            token.setDefaultValue(self);
+            self.setTokenDefault(token);
           }
           //
         }
       }
-      _ => {
-        // Другие типы — ничего не делаем.
+      _ =>
+      { // Другие типы — ничего не делаем.
+        //
         // todo Другие типы или логика здесь нужна?
       }
     }
@@ -597,10 +597,14 @@ impl StructureType
   /// процедуры это его `dataType`; Для одиночного типа это сам `structureType`.
   pub fn castToken(&self, token: &mut Token) -> StructureType
   {
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    
     // Объединение `a: U8 | String`: вариант подбирается по значению.
     if let StructureType::Union(_) = self {
       return self.normalizeUnion(token);
     }
+    
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
     // `None` - отсутствие значения: `abc(a: None)` и `None(a)` очищают токен.
     if self == &StructureType::Primitive(PrimitiveType::None)
@@ -609,7 +613,9 @@ impl StructureType
       token.setData(None);
       return self.clone();
     }
-
+    
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    
     // Строки: значение становится строкой этого типа, как `String(5)` - `"5"`.
     if matches!(
       self,
@@ -626,10 +632,79 @@ impl StructureType
       token.setData(data);
       return self.clone();
     }
-
+    
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    
     // Остальное - по границам `StructureType`.
     self.normalizeToken(token);
     self.clone()
+    
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  }
+
+  // ===============================================================================================
+  
+  /// Ставит стандартное значение токена при указании требуемого [`StructureType`];
+  /// 
+  /// Очень удобно для случаев, если в структуру приравнивают что-то не то,
+  /// и нам надо `default` значение.
+  /// 
+  /// Например, если `a: U8 = "test"`, то будет `0` из-за константного поведения.
+  fn setTokenDefault(&self, token: &mut Token) -> ()
+  {
+    // Создаём базовый токен.
+    match self
+    {
+      // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+      
+      // Целочисленные типы.
+      StructureType::Primitive(PrimitiveType::U8) | StructureType::Primitive(PrimitiveType::U16) |
+      StructureType::Primitive(PrimitiveType::U32) | StructureType::Primitive(PrimitiveType::U64) |
+      StructureType::Primitive(PrimitiveType::Usize) |
+      //
+      StructureType::Primitive(PrimitiveType::I8) | StructureType::Primitive(PrimitiveType::I16) |
+      StructureType::Primitive(PrimitiveType::I32) | StructureType::Primitive(PrimitiveType::I64) |
+      StructureType::Primitive(PrimitiveType::Isize) =>
+      {
+        token.setDataType(TokenType::UInt);
+        token.setData("0");
+      }
+
+      // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+      
+      // Числа с плавающей точкой.
+      StructureType::Primitive(PrimitiveType::F32) | StructureType::Primitive(PrimitiveType::F64) =>
+      {
+        token.setDataType(TokenType::Float); // todo Почему не UFloat? по сути же он должен быть как UInt выше сделан.
+        token.setData("0.0");
+      }
+
+      // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+      
+      StructureType::Primitive(PrimitiveType::True) =>
+      {
+        token.setDataType(TokenType::True);
+        token.setData("True");
+      }
+      StructureType::Primitive(PrimitiveType::False) =>
+      {
+        token.setDataType(TokenType::False);
+        token.setData("False");
+      }
+
+      // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+      
+      // Для остальных типов - ничего.
+      //
+      // todo Другие типы нужны тут?
+      _ =>
+      {
+        token.setDataType(TokenType::None);
+        token.setData(None);
+      }
+
+      // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    };
   }
 
   // ===============================================================================================
@@ -639,53 +714,6 @@ impl StructureType
 
 impl Token
 {
-  // ===============================================================================================
-  
-  /// Ставит стандартное значение токена при указании требуемого [`StructureType`];
-  /// 
-  /// Очень удобно для случаев, если в структуру приравнивают что-то не то,
-  /// и нам надо `default` значение.
-  /// 
-  /// Например, если `a: U8 = "test"`, то будет `0` из-за константного поведения.
-  fn setDefaultValue(&mut self, structureType: &StructureType) -> ()
-  {
-    // Создаём базовый токен.
-    match structureType
-    {
-      // Целочисленные типы.
-      StructureType::Primitive(PrimitiveType::U8) | StructureType::Primitive(PrimitiveType::U16) |
-      StructureType::Primitive(PrimitiveType::U32) | StructureType::Primitive(PrimitiveType::U64) |
-      StructureType::Primitive(PrimitiveType::Usize) |
-      //
-      StructureType::Primitive(PrimitiveType::I8) | StructureType::Primitive(PrimitiveType::I16) |
-      StructureType::Primitive(PrimitiveType::I32) | StructureType::Primitive(PrimitiveType::I64) |
-      StructureType::Primitive(PrimitiveType::Isize) => {
-        self.setDataType(TokenType::UInt);
-        self.setData("0");
-      }
-      // Числа с плавающей точкой.
-      StructureType::Primitive(PrimitiveType::F32) | StructureType::Primitive(PrimitiveType::F64) => {
-        self.setDataType(TokenType::Float); // todo Почему не UFloat? по сути же он должен быть как UInt выше сделан.
-        self.setData("0.0");
-      }
-      //
-      StructureType::Primitive(PrimitiveType::True) => {
-        self.setDataType(TokenType::True);
-        self.setData("True");
-      }
-      StructureType::Primitive(PrimitiveType::False) => {
-        self.setDataType(TokenType::False);
-        self.setData("False");
-      }
-      // Для остальных типов - ничего.
-      // todo Другие типы нужны тут?
-      _ => {
-        self.setDataType(TokenType::None);
-        self.setData(None);
-      }
-    };
-  }
-  
   // ===============================================================================================
   
   /// Вычисляет [`StructureType`] на основе токена.
