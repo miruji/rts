@@ -563,8 +563,10 @@ impl Structure
             }
           } else
           { // Требуется выполнить преобразование в указанный тип данных.
-            // Primitive → natural ABI-форма (normalizeToken не знает примитивов).
-            structure.dataType.abiType().normalizeToken(&mut rightPartValue)
+            //
+            // `Primitive` → natural ABI-форма (`StructureType.castToken` не знает примитивов-значений).
+            // todo Мб теперь знает? Нужно проверить.
+            structure.dataType.abiType().castToken(&mut rightPartValue);
           }
       }
 
@@ -621,8 +623,8 @@ impl Structure
         _ => Token::newEmpty(TokenType::None)
       };
       // todo Здесь должны быть преобразования типа у структуры.
-      //  Сейчас если станет Int, то у структуры не поменяется U8 на I8.
-      //  + Здесь должна быть normalizeToken когда не Dynamic.
+      //  Сейчас если станет `Int`, то у структуры не поменяется `U8` на `I8`.
+      //  + Здесь должна быть `castToken` когда не `Dynamic`.
       structure.lines =
         Some(vec![
           Arc::new(RwLock::new( 

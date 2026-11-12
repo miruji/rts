@@ -170,15 +170,16 @@ impl Structure
                     // todo:
                     //  Кстати не должен ли `getAllExpressions()` сам делать приведение?
                     //  Много таких мест в коде с params.
-                    let parameterType: StructureType =
-                      if let Some(variants) = calledStructureStructure.unionTypes.clone()
-                    { // Объединение `n: U8 | String`: под каждый вызов подбирается свой вариант.
-                      StructureType::Union(variants)
-                    } else
-                    { // Одиночный тип параметра: `n: U8`.
-                      calledStructureStructure.dataType.clone()
-                    };
-                    calledStructureStructure.dataType = parameterType.castToken(&mut token);
+                    calledStructureStructure.dataType =
+                      match calledStructureStructure.unionTypes.clone() 
+                      { // Объединение `n: U8 | String`: под каждый вызов подбирается свой вариант.
+                        Some(variants) => StructureType::Union(variants).normalizeUnion(&mut token),
+                        None => 
+                        { // Одиночный тип параметра: `n: U8`.
+                          calledStructureStructure.dataType.clone().castToken(&mut token);
+                          calledStructureStructure.dataType.clone()
+                        }
+                      };
 
                     // ABI-композит `String`: `.pointer`/`.length`;
                     //

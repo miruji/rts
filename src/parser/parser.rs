@@ -453,7 +453,7 @@ fn linearStructure(lineTokens: &[Token], parentLink: Arc<RwLock<Structure>>, isB
       // Что ждём от FFI-вызова справа:
       //
       // - `a: Usize = lib.f(x)` => Тип указан, он же тип возврата C-функции
-      //   и в него кастуется результат (`normalizeToken` ниже);
+      //   и в него кастуется результат (`castToken` ниже);
       //
       // - `a = lib.f(x)` / `a~~ = lib.f(x)` => Тип слева получаем от правой части;
       //
@@ -485,11 +485,11 @@ fn linearStructure(lineTokens: &[Token], parentLink: Arc<RwLock<Structure>>, isB
       // Динамический import(): правая часть выражения — не скаляр, а целая
       // под-структура (модуль со своими подструктурами).
       // 
-      // Обычная ветка ниже (inference/normalizeToken/Line{tokens: Some(vec![value])}) 
+      // Обычная ветка ниже (inference/castToken/Line{tokens: Some(vec![value])}) 
       // рассчитана на скаляр, поэтому переносим (dataType, lines, structures) модуля
       // напрямую в новую структуру и выходим раньше.
       //
-      // todo rewrite desc
+      // todo rewrite desc (в целом, эти абзацы не информативные).
       if *value.getDataType() == TokenType::Link
       {
         if let Some(markerName) = value.getData().toString()
@@ -549,7 +549,7 @@ fn linearStructure(lineTokens: &[Token], parentLink: Arc<RwLock<Structure>>, isB
         structureType = value.getStructureType();
       } else 
       { // Требуется выполнить преобразование в указанный тип данных.
-        structureType.normalizeToken(&mut value);
+        structureType.castToken(&mut value);
       }
 
       //

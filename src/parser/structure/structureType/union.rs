@@ -469,9 +469,9 @@ impl StructureType
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
     // Тип значения уже совпадает с `вариантом` — приводить нечего,
-    // иначе зажимаем значение в границы `варианта`.
+    // иначе приводим значение в границы `варианта`.
     if natural != variant && variant != StructureType::Primitive(PrimitiveType::Any) {
-      variant.normalizeToken(token);
+      variant.castToken(token);
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
