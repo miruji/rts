@@ -162,13 +162,13 @@ fn pushArg<'a, 'g>(builder: CallBuilder<'a, 'g>, arg: FfiArgValue) -> CallBuilde
 
 /// Что вызывающий код ждёт от результата FFI-вызова.
 ///
-/// `chillffi` требует знать тип результата ДО вызова (`.result::<T>()`), потому что от него
+/// `chillffi` требует знать тип результата до вызова (`.result::<T>()`), потому что от него
 /// зависит, из какого регистра ABI читать значение. RTS же узнаёт этот тип из контекста:
 ///
 /// ```text
-/// lib.print(x)                  # Discard       — результат не нужен
-/// a = libc.strnlen("abc")       # Infer         — тип берётся от правой части
-/// a: Usize = libc.strnlen("abc")  # Typed(Usize)  — правая часть приводится к левой
+/// lib.print(x)  # `Discard` — результат не нужен
+/// a = libc.strnlen("abc")  # `Infer` — тип берётся от правой части
+/// a: Usize = libc.strnlen("abc")  #` Typed(Usize)` — правая часть приводится к левой
 /// ```
 #[derive(Clone, PartialEq)]
 pub enum FfiExpect
@@ -229,8 +229,8 @@ fn callWithResult<'a, 'g>(builder: CallBuilder<'a, 'g>, expect: &FfiExpect) -> R
     e.to_string()
   }
 
-  // Тип слева не указан или "любой" — ABI-вызов идёт как usize (внутренний
-  // регистр-read, не итоговый stype() — тот выводится из значения ниже).
+  // Тип слева не указан или "любой" — ABI-вызов идёт как `usize` (внутренний регистр-read,
+  // не итоговый `stype()` — тот выводится из значения ниже).
   //
   // Тип ожидания приводится к ABI-форме: `CString` - это алиас от `Pointer`,
   // поэтому адрес читается так же, как у `Pointer`.
@@ -241,14 +241,16 @@ fn callWithResult<'a, 'g>(builder: CallBuilder<'a, 'g>, expect: &FfiExpect) -> R
       builder.void().map_err(error)?;
       return Ok(Token::newEmpty(TokenType::None));
     }
-    // todo Infer читает Usize: у узких (8/16/32 бит), знаковых и float результатов старшие биты/регистр не те,
-    // для них тип слева обязателен. Не проверено на x86-32 (build.sh 32): там Usize это 32 бита
+    // todo `Infer` читает `Usize`: у узких (8/16/32 бит), знаковых и `float` результатов старшие биты/регистр не те,
+    //  для них тип слева обязателен. Не проверено на `x86-32` (`build.sh 32`): там `Usize` это 32-бита.
+    // todo Кстати 32-бита не планируется сейчас, поэтому это должно повлиять на рассмотрение этого вопроса,
+    //  я бы действовал в рамках возможностей `chillffi`.
     FfiExpect::Infer => StructureType::Primitive(PrimitiveType::Usize),
     FfiExpect::Typed(structureType) => match structureType.abiType()
     {
       StructureType::Primitive(PrimitiveType::None) | StructureType::Primitive(PrimitiveType::Any) => StructureType::Primitive(PrimitiveType::Usize),
-      // Адрес читаем как число; он живёт только пока жив FFI scope (см. chillffi Value::Pointer).
-      // todo Вне [ffi] блока scope временный — полученный адрес после вызова использовать нельзя
+      // Адрес читаем как число; он живёт только пока жив FFI scope (см. `chillffi` `Value::Pointer`).
+      // todo Вне `[ffi]` структуры `scope` временный — полученный адрес после вызова использовать нельзя.
       StructureType::Primitive(PrimitiveType::Pointer) => StructureType::Primitive(PrimitiveType::Usize),
       other => other
     }
@@ -285,9 +287,10 @@ fn callWithResult<'a, 'g>(builder: CallBuilder<'a, 'g>, expect: &FfiExpect) -> R
 
 /// Загружает библиотеку и зовёт её метод через переданный `Scope<'g>`.
 ///
-/// Используется внутри `[ffi] { ... }` блоков, чтобы удерживать один и тот же
-/// chillffi scope на всём протяжении блока (Scope Retention).
-/// На каждый вызов FFI внутри блока используется один и тот же scope —
+/// Используется внутри структур `[ffi] { ... }`, чтобы удерживать один и тот же
+/// `chillffi` `scope` на всём протяжении блока (Scope Retention).
+/// 
+/// На каждый вызов FFI внутри блока используется один и тот же `scope` —
 /// соответственно, загруженные через `scope.load(...)` библиотеки и
 /// `AllocatedMemory` живут, пока живёт блок, и освобождаются при его выходе.
 ///

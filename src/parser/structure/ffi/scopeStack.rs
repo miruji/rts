@@ -5,8 +5,8 @@ use chillffi::ffi::scope::{FFIScope, Scope};
 
 // Стек удерживаемых FFI scope на текущем потоке.
 // 
-// Один уровень стека —  один `@ffi { ... }` блок;
-// Создаётся лениво (после 1-го FFI вызова внутри блока).
+// Один уровень стека — одна `[ffi] { ... }` структура;
+// Создаётся лениво (после 1-го FFI вызова внутри структуры).
 //
 // Важные инварианты:
 //
@@ -17,19 +17,19 @@ use chillffi::ffi::scope::{FFIScope, Scope};
 //    `Scope<'_>` borrows из `FFIScope`. Поэтому в API ниже `&Scope<'_>`
 //    отдаётся только на время одного FFI вызова.
 //
-//  - При выходе из `@ffi` блока слот в стеке снимается; если scope
-//    уже был создан (`RefCell::Some`), он дропается здесь же по RAII.
+//  - При выходе из `[ffi]` структуры слот в стеке снимается; если scope
+//    уже был создан (`RefCell::Some`), он делает `drop` здесь же по RAII.
 
 // =================================================================================================
 
 thread_local! {
-  /// Стек ленивых FFI scope-ов. Каждый `@ffi { ... }` блок пушит свой
+  /// Стек ленивых FFI scope-ов. Каждая `[ffi] { ... }` структура пушит свой
   /// `Rc<RefCell< Option<FFIScope> >>` сюда при входе и снимает при выходе.
   static FfiScopeStack: RefCell<Vec< Rc<RefCell< Option<FFIScope> >> >> =
     const { RefCell::new(Vec::new()) };
 }
 
-/// Отмечает вход в `@ffi { ... }` блок. Кладёт `пустой` (lazy) scope-slot на стек.
+/// Отмечает вход в `[ffi] { ... }` структуру. Кладёт `пустой` (lazy) scope-slot на стек.
 /// 
 /// Сам `FFIScope` не создаётся до первого реального FFI вызова.
 pub fn enterFfiBlock() -> Rc<RefCell< Option<FFIScope> >>
@@ -41,10 +41,10 @@ pub fn enterFfiBlock() -> Rc<RefCell< Option<FFIScope> >>
   slot
 }
 
-/// Отмечает выход из `@ffi { ... }` блока. Снимает свой слот со стека.
+/// Отмечает выход из `[ffi] { ... }` структуры. Снимает свой слот со стека.
 /// 
-/// Если `scope` уже был создан — он дропается здесь, по RAII `FFIScope::drop`,
-/// вместе с библиотеками и аллокациями, выполненными внутри блока.
+/// Если `scope` уже был создан — он делает `drop` здесь, по RAII `FFIScope::drop`,
+/// вместе с библиотеками и аллокациями, выполненными внутри структуры.
 pub fn exitFfiBlock() -> ()
 {
   FfiScopeStack.with(|stack| {
@@ -55,31 +55,31 @@ pub fn exitFfiBlock() -> ()
 }
 
 /// Возвращает `true`, если текущая точка выполнения находится внутри
-/// `@ffi { ... }` блока (на верхушке стека что-то лежит).
+/// `[ffi] { ... }` структуры (на верхушке стека что-то лежит).
 pub fn isInsideFfiBlock() -> bool
 {
   FfiScopeStack.with(|stack| !stack.borrow().is_empty())
 }
 
-/// Достаёт scope-slot текущего `@ffi` блока (тот, что положили в `enterFfiBlock`).
+/// Достаёт `scope-slot` текущей `[ffi]` структуры (тот, что положили в `enterFfiBlock`).
 /// 
-/// Возвращает `None`, если мы не внутри `@ffi` блока.
+/// Возвращает `None`, если мы не внутри `[ffi]` структуры.
 pub fn currentFfiBlock() -> Option< Rc<RefCell< Option<FFIScope> >> >
 {
   FfiScopeStack.with(|stack| stack.borrow().last().map(Rc::clone))
 }
 
-/// Гарантирует, что у текущего `@ffi` блока есть живой `FFIScope`,
+/// Гарантирует, что у текущей `[ffi]` структуры есть живой `FFIScope`,
 /// лениво создавая его на первом обращении. Возвращает копию `Rc` на слот —
 /// реальный `FFIScope` можно достать у него через `borrow()`.
 ///
 /// Семантика `создаётся после 1 запроса FFI` соблюдается здесь:
 /// 
-///  - До первого FFI-вызова в блоке слот хранит `None`, никакого
-///    `FFIScope::enter()` не происходит;
+/// - До первого FFI-вызова в структуре слот хранит `None`, никакого
+///   `FFIScope::enter()` не происходит;
 /// 
-///  - На первом вызове `FFIScope::enter()` вызывается ровно один раз,
-///    последующие вызовы переиспользуют тот же `scope`.
+/// - На первом вызове `FFIScope::enter()` вызывается ровно один раз,
+///   последующие вызовы переиспользуют тот же `scope`.
 pub fn ensureFfiScope() -> Option< Rc<RefCell< Option<FFIScope> >> >
 {
   let slot: Rc<RefCell< Option<FFIScope> >> = currentFfiBlock()?;
@@ -106,17 +106,17 @@ pub fn ensureFfiScope() -> Option< Rc<RefCell< Option<FFIScope> >> >
   Some(slot)
 }
 
-/// Выполняет FFI-операцию `f` внутри временно взятого `&Scope<'_>` текущего
-/// `@ffi` блока. Это единственное место, где `Scope<'_>` живёт достаточно
+/// Выполняет FFI-операцию `f` внутри временно взятого `&Scope<'_>` текущей
+/// `[ffi]` структуры. Это единственное место, где `Scope<'_>` живёт достаточно
 /// долго, чтобы через него можно было загрузить `Library` и позвать метод.
 ///
-/// Если мы не в `@ffi` блоке — возвращает `None`, и вызывающий код
+/// Если мы не в `[ffi]` структуре — возвращает `None`, и вызывающий код
 /// должен отработать fallback.
 pub fn withCurrentFfiScope<R>(
   f: impl FnOnce(&Scope<'_>) -> Result<R, String>
 ) -> Option< Result<R, String> >
 {
-  // 1. Берём `Rc` на слот текущего блока (или `None`, если не в `@ffi`.
+  // 1. Берём `Rc` на слот текущей структуры (или `None`, если не в `[ffi]`.
   let slot: Rc<RefCell< Option<FFIScope> >> = ensureFfiScope()?;
 
   // 2. Borrow-им `FFIScope`, чтобы получить `&Scope<'_>`;
@@ -141,7 +141,7 @@ mod tests
   use crate::parser::structure::ffi::scopeStack::{currentFfiBlock, ensureFfiScope, enterFfiBlock, exitFfiBlock, isInsideFfiBlock, withCurrentFfiScope};
   // ===============================================================================================
 
-  /// Вне `@ffi` блока `isInsideFfiBlock` возвращает `false`.
+  /// Вне `[ffi]` структуры `isInsideFfiBlock` возвращает `false`.
   #[test]
   fn outsideBlock() -> ()
   {
@@ -150,7 +150,7 @@ mod tests
     assert!(withCurrentFfiScope(|_s| Ok::<_, String>(())).is_none());
   }
 
-  /// Внутри `@ffi` блока до первого FFI-вызова scope ещё не создан;
+  /// Внутри `[ffi]` структуры до первого FFI-вызова scope ещё не создан;
   /// После вызова `ensureFfiScope` он появляется.
   #[test]
   fn lazyScopeCreation() -> ()
@@ -214,8 +214,8 @@ mod tests
 
     exitFfiBlock();
 
-    let pid1: i32 = pid1.expect("should be in the @ffi block").expect("getpid #1");
-    let pid2: i32 = pid2.expect("should be in the @ffi block").expect("getpid #2");
+    let pid1: i32 = pid1.expect("should be in the [ffi] block").expect("getpid #1");
+    let pid2: i32 = pid2.expect("should be in the [ffi] block").expect("getpid #2");
     assert_eq!(pid1, pid2, "getpid in the same process returns the same value");
     assert!(pid1 > 0, "pid must be > 0");
   }

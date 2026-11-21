@@ -104,7 +104,7 @@ macro_rules! union
   // Список вариантов.
   ($($variant:tt)*) =>
   {
-    { // Блок - чтобы собрать варианты по одному.
+    { // Структура - чтобы собрать варианты по одному.
       let mut __variants: Vec<$crate::parser::structure::structureType::StructureType> = Vec::new();
       $crate::parser::structure::structureType::union::union!(@munch __variants; $($variant)*);
       $crate::parser::structure::structureType::StructureType::Union(__variants)

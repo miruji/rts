@@ -15,7 +15,7 @@ struct ConditionBranch
   /// Токены условия.
   condition: Option< Vec<Token> >,
   
-  /// Линии блока (структуры).
+  /// Линии [`Structure`].
   body: Option< Vec< Arc<RwLock<Line>> > >
 }
 
@@ -86,13 +86,13 @@ fn executeConditionBody(
   result.unwrap_or_else(|| Token::newEmpty(TokenType::None))
 }
 
-/// Единая логика `if`/`elif`/`else`: и для условного блока-statement, и для блока-выражения.
+/// Единая логика `if`/`elif`/`else`.
 ///
-/// Ветки проверяются по порядку: блок запускается только по `True`;
-/// `False` и `None` (пустота, #39) — идём к следующей ветке.
+/// Условия проверяются по порядку: структура запускается только по `True`;
+/// `False` и `None` — идём к следующему условию.
 ///
-/// Возвращает `result` выполненной ветки (пустой `None`-токен, если `result` нет),
-/// либо `None`, если ни одна ветка не подошла.
+/// Возвращает `result` выполненной структуры (пустой `None`-токен, если `result` нет),
+/// либо `None`, если ни одно условие не подошло.
 fn executeConditionChain(
   branches: Vec<ConditionBranch>,
   parentLink: &Arc<RwLock<Structure>>

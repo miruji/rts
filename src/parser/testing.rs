@@ -230,16 +230,20 @@ pub(super) fn printStructureFacets(
 
 // =================================================================================================
 
-/// Проверка структуры одной строкой; выполняет код и сверяет ТОЛЬКО указанные грани.
+/// Проверка структуры одной строкой; выполняет код и сверяет только указанные грани.
 ///
 /// Грани юзаются в любом наборе - ровно те, что проверяет `.rt` файл: где-то сверяются
 /// `type` и `stype`, где-то только один из них, где-то ещё и значение. Порядок граней
 /// фиксированный - `type` ⟶ `stype` ⟶ `utype` ⟶ `value`, как в `.rt` файлах (`type(a) | stype(a) = a`):
-///
-///     checkStructure!("a: U8 = 300", "a", type UInt, stype U8, value "255");
-///     checkStructure!("a := 0.0", "a", type UFloat, stype F32); // Без значения
-///     checkStructure!("a := 10", "a", stype U8); // Только stype
-///     checkStructure!("a: U8 | 10 = 10", "a", stype primitiveValueNumber("10"), utype union![U8, primitiveValueNumber("10")]);
+/// ```ignore
+/// checkStructure!("a: U8 = 300", "a", type UInt, stype U8, value "255");
+/// 
+/// checkStructure!("a := 0.0", "a", type UFloat, stype F32); // Без значения.
+/// 
+/// checkStructure!("a := 10", "a", stype U8); // Только `stype`.
+/// 
+/// checkStructure!("a: U8 | 10 = 10", "a", stype primitiveValueNumber("10"), utype union![U8, primitiveValueNumber("10")]);
+/// ```
 ///
 /// Типы можно писать коротко - по имени варианта (`type UInt`, `stype U8`);
 /// полные формы `TokenType::UInt` и `StructureType::Primitive(PrimitiveType::U8)`
@@ -251,9 +255,11 @@ pub(super) fn printStructureFacets(
 /// `utype` - полный объявленный тип: набор вариантов объединения (`utype(a)`), а без
 /// объединения он равен `stype`; `value` - значение (`{a}`).
 /// Две формы, имя структуры всегда строкой (`&str`/литерал; путь через точку: `"m.a"`):
-///
-///     checkStructure!("a := 10", "a", value "10");   // код
-///     checkStructure!(main, "a", value "10");       // выполненный `main`
+/// ```ignore
+/// checkStructure!("a := 10", "a", value "10"); // Код
+/// 
+/// checkStructure!(main, "a", value "10"); // Выполненный `main`
+/// ````
 ///
 /// Паникует на первой неверной грани; `tryCheckStructure!` вместо паники возвращает `Err`.
 macro_rules! checkStructure
@@ -275,9 +281,11 @@ pub(super) use checkStructure;
 ///
 /// Грани идут в порядке: `type` ⟶ `stype` ⟶ `utype` ⟶ `value` ⟶ `mut` ⟶ `lines`.
 /// У каждой грани две формы - короткая (имя варианта) и полная (выражение):
-///
-///     checkStructure!("a: U8 = 10", "a", stype U8); // Короткая.
-///     checkStructure!("a: U8 = 10", "a", stype StructureType::Primitive(PrimitiveType::U8)); // Полная.
+/// ```ignore
+/// checkStructure!("a: U8 = 10", "a", stype U8); // Короткая.
+/// 
+/// checkStructure!("a: U8 = 10", "a", stype StructureType::Primitive(PrimitiveType::U8)); // Полная.
+/// ```
 ///
 /// Короткая форма приводится к полной одинаково для всех граней: правило одно на грань,
 /// и одинаковое для всех - короткая форма `type` разбирается так же, как `stype` или `mut`.
@@ -542,15 +550,17 @@ pub(super) use tryCheckStructure;
 /// Выполняет код и возвращает основную структуру `main`.
 ///
 /// Код с переносами - сырым литералом `r#"..."#`, без `\n` внутри строки:
-///
-///     let mainLink: Arc<RwLock<Structure>> = runCode!(r#"
-///       a = 5
-///       type { a }
-///     "#);
+/// ```ignore
+/// let mainLink: Arc<RwLock<Structure>> = runCode!(r#"
+///   a = 5
+///   type { a }
+/// "#);
+/// ```
 ///
 /// Код без переносов - обычной строкой:
-///
-///     let mainLink: Arc<RwLock<Structure>> = runCode!("a := 10");
+/// ```ignore
+/// let mainLink: Arc<RwLock<Structure>> = runCode!("a := 10");
+/// ````
 macro_rules! runCode
 {
   ($code:expr) =>
@@ -569,14 +579,16 @@ pub(super) use runCode;
 /// Все поля руками писать не нужно — макрос сам выводит то, что внутри,
 /// по пути от выполненной структуры. По выводу записываются правильные
 /// ожидания в `checkStructure!`:
-///
-///     showStructure!(main, "a.bHello", stype);
-///     // show for 'a.bHello' | stype=String
+/// ```ignore
+/// showStructure!(main, "a.bHello", stype);
+/// // show for 'a.bHello' | stype=String
+/// ```
 ///
 /// Печатается ровно запрошенное; грани различаются между собой:
-///
-///     showStructure!(main, "a", type, stype, utype, value);
-///     // show for 'a' | type=UInt, stype=U8, utype=U8, value=10
+/// ```ignore
+/// showStructure!(main, "a", type, stype, utype, value);
+/// // show for 'a' | type=UInt, stype=U8, utype=U8, value=10
+/// ```
 ///
 /// Грани: `type` - тип токена (`type(a)` в `.rt`), `stype` - тип структуры (`stype(a)`),
 /// `utype` - полный объявленный тип (`utype(a)`), `value` - значение (`{a}`),
@@ -585,9 +597,11 @@ pub(super) use runCode;
 /// Грань хотя бы одна: ровно перечисленное, «все сразу» без перечисления - нет.
 ///
 /// Вывод в консоль:
-///
-///     cargo test -- --nocapture --test-threads=1
-///     cargo test testName -- --nocapture
+/// ```text
+/// cargo test -- --nocapture --test-threads=1
+/// 
+/// cargo test testName -- --nocapture
+/// ```
 macro_rules! showStructure
 {
   // `showStructure!(main, "a.bHello", stype)` — выполненная структура, путь
@@ -607,12 +621,15 @@ pub(super) use showStructure;
 // =================================================================================================
 
 /// Смоук-тесты самого `tryCheckStructure!`: разные наборы граней компилируются и реально сверяются.
-/// Проверка выражения из токенов (без `a = ...`): сверяются ТОЛЬКО указанные грани.
+/// Проверка выражения из токенов (без `a = ...`): сверяются только указанные грани.
 ///
 /// Грани: `type` - тип токена результата, `value` - его значение; порядок `type` ⟶ `value`.
 ///
-///     checkExpression!("(1e308 + 1e308) - (1e308 + 1e308)", type UFloat, value "0");
-///     checkExpression!("1e309", value &f64::MAX.to_string()); // Только значение
+/// ```ignore
+/// checkExpression!("(1e308 + 1e308) - (1e308 + 1e308)", type UFloat, value "0");
+/// 
+/// checkExpression!("1e309", value &f64::MAX.to_string()); // Только значение.
+/// ```
 ///
 /// Тип токена можно писать коротко - по имени варианта (`type UFloat`);
 /// полная форма `TokenType::UFloat` тоже работает.
@@ -670,11 +687,12 @@ pub(super) static LibraryCounter: AtomicUsize = AtomicUsize::new(0);
 /// Создаёт папку в `/tmp` с уникальным номером и возвращает путь к ней.
 ///
 /// Для тестов с `import()`, где несколько `.rt` файлов лежат в одной папке.
-///
-///     let dir: String = createDirectory!();
-///     let aPath: String = writeCodeFile!(&dir, r#"hello() {{ = 42 }}"#);
-///     let aRel: String = relativePath!(&aPath);
-///     let mainPath: String = writeCodeFile!(&dir, r#"a := import("{aRel}")"#);
+/// ```ignore
+/// let dir: String = createDirectory!();
+/// let aPath: String = writeCodeFile!(&dir, r#"hello() {{ = 42 }}"#);
+/// let aRel: String = relativePath!(&aPath);
+/// let mainPath: String = writeCodeFile!(&dir, r#"a := import("{aRel}")"#);
+/// ```
 macro_rules! createDirectory
 {
   () =>
@@ -698,9 +716,13 @@ pub(super) use createDirectory;
 ///
 /// Берёт последний компонент пути; опциональный префикс каталога:
 ///
-///     relativePath!(&path)              // `/tmp/x/10.rt` ⟶ `./10.rt`
-///     relativePath!(&path, "lib")       // ⟶ `./lib/10.rt`
-///     relativePath!(&path, "lib/deep")  // ⟶ `./lib/deep/10.rt`
+/// ```ignore
+/// relativePath!(&path) // `/tmp/x/10.rt` ⟶ `./10.rt`
+/// 
+/// relativePath!(&path, "lib") // ⟶ `./lib/10.rt`
+/// 
+/// relativePath!(&path, "lib/deep" // ⟶ `./lib/deep/10.rt`
+/// ```
 macro_rules! relativePath
 {
   ($absolute:expr) =>
@@ -733,16 +755,23 @@ pub(super) fn relativePathFrom(absolute: &str, dir: Option<&str>) -> String
 // =================================================================================================
 
 /// Записывает код в `.rt` с уникальным номером, возвращает **absolute** path.
-///
-/// - `writeCodeFile!(code)` — в `/tmp/{id}.rt`
-/// - `writeCodeFile!(dir, code)` — в `{dir}/{id}.rt` (несколько файлов в одной папке для `import`)
-///
+/// 
+/// ```ignore
+/// writeCodeFile!(code)` // ⟶ `/tmp/{id}.rt`
+/// 
+/// writeCodeFile!(dir, code) // ⟶ `{dir}/{id}.rt` (несколько файлов в одной папке для `import`)
+/// ```
+/// 
 /// Литерал проходит через `format!`: `{libraryPath}` / `{rel}` подставляются из scope.
 /// Уже готовая `String` пишется как есть (без повторного `format!`).
-///
-///     let path: String = writeCodeFile!(r#"a := 10"#);
-///     let path: String = writeCodeFile!(r#"lib = importNative("{libraryPath}")"#);
-///     let aPath: String = writeCodeFile!(&dir, r#"hello() { = 42 }"#);
+/// 
+/// ```ignore
+/// let path: String = writeCodeFile!(r#"a := 10"#);
+/// 
+/// let path: String = writeCodeFile!(r#"lib = importNative("{libraryPath}")"#);
+/// 
+/// let path: String = writeCodeFile!(&dir, r#"hello() { = 42 }"#);
+/// ```
 macro_rules! writeCodeFile
 {
   // Литерал — format! (подстановка `{name}` из окружающего scope).
@@ -791,8 +820,10 @@ pub(super) use writeCodeFile;
 // =================================================================================================
 
 /// Собирает C-код в динамическую библиотеку `.so` в `/tmp` с уникальным номером.
-///
-///     let libraryPath: String = buildLibrary!(r#"int add(int a, int b) { return a + b; }"#);
+/// 
+/// ```ignore
+/// let libraryPath: String = buildLibrary!(r#"int add(int a, int b) { return a + b; }"#);
+/// ```
 macro_rules! buildLibrary
 {
   ($code:expr) =>

@@ -12,7 +12,7 @@ use std::sync::{Arc, RwLock, RwLockReadGuard};
 /// Ищет вложенную [`Structure`]; Это линия, у которой есть вложенные линии.
 ///
 /// Например:
-/// ```ignore
+/// ```text
 /// name {
 ///   ...
 /// }

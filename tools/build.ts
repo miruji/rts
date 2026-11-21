@@ -83,7 +83,7 @@ async function maybeUpdateWasmPack(buildOutput: string): Promise<void> {
 
 /** Install wasm-pack through cargo if it is missing (no prompt, works without TTY) */
 async function ensureWasmPack(): Promise<boolean> {
-  // cargo bin dir may be absent from PATH of the current process
+  // cargo bin dir may be absent from `PATH` of the current process
   const cargoBin: string = join(process.env.CARGO_HOME ?? join(process.env.HOME ?? "", ".cargo"), "bin");
   if (!(process.env.PATH ?? "").split(":").includes(cargoBin)) {
     process.env.PATH = `${cargoBin}:${process.env.PATH ?? ""}`;

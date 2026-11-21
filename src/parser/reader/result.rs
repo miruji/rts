@@ -32,7 +32,7 @@ pub fn searchReturnLine(
 
   // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   
-  // Это `return` (`:=`) или результат блока (`=`)?
+  // Это `return` (`:=`) или результат структуры с (`=`)?
   let firstType: TokenType = *lineTokens[0].getDataType();
   if !matches!(firstType, TokenType::Equals | TokenType::Creation) {
     return false

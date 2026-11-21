@@ -185,7 +185,7 @@ impl Structure
     parameters: Option< Vec<Token> > // Аргументы вызова, если это вызов.
   ) -> Token
   {
-    // Голова ссылки (`a` в `a.b`) или голое имя: ищется ВВЕРХ по области видимости.
+    // Голова ссылки (`a` в `a.b`) или голое имя: ищется вверх по области видимости.
     let structureLink: Option< Arc<RwLock<Self>> > =
       if let Some(currentStructureLink) = currentStructureLink
       {
