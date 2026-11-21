@@ -40,10 +40,10 @@ fn collectConditionBranches(
       let line: RwLockReadGuard<Line> = lineLink.read().unwrap();
       let Some(tokens) = &line.tokens else { break };
       if tokens.is_empty() || *tokens[0].getDataType() != TokenType::Question
-      { // Выходим, если в начале линии нет TokenType::Question.
+      { // Выходим, если в начале линии нет `TokenType::Question`.
         break;
       }
-      // Если в токенах просто TokenType::Question, значит это else.
+      // Если в токенах просто `TokenType::Question`, значит это `else`.
       let isElse: bool = tokens.len() == 1;
       branches.push(ConditionBranch
       {
@@ -119,11 +119,9 @@ fn executeConditionChain(
 
 // =================================================================================================
 
-/// Читает условный блок (`if`/`elif`/`else`) как statement.
+/// Читает структуру с условием (`if`/`elif`/`else`) как statement.
 ///
 /// Первая ветка — текущая линия, остальные ищутся ниже.
-/// 
-/// Сдвигает `lineIndex` на количество пройденных блоков.
 pub fn executeConditionStatement(
   lineTokens: &[Token],
   lineLines: &Option< Vec< Arc<RwLock<Line>> > >,
@@ -132,11 +130,11 @@ pub fn executeConditionStatement(
 {
   let mut branches: Vec<ConditionBranch> = vec![ConditionBranch
   {
-    // Если в токенах просто TokenType::Question, значит это else.
+    // Если в токенах просто `TokenType::Question`, значит это `else`.
     condition: if lineTokens.len() > 1 { Some(lineTokens[1..].to_vec()) } else { None },
     body: lineLines.clone()
   }];
-  // Если первый блок уже else, то цепочка закончена: `?` ниже начинает новую.
+  // Если первое условие уже `else`, то цепочка условий закончена: `?` ниже начинает новую.
   if branches[0].condition.is_some()
   {
     branches.extend(collectConditionBranches(parentLink));
@@ -145,14 +143,14 @@ pub fn executeConditionStatement(
   true
 }
 
-/// Читает `?` в токенах как блок-выражение `a := ? True { = 20 }`.
+/// Читает `?` в токенах как структуру с условием `a := ? True { = 20 }`.
 ///
 /// Выполняет цепочку: первая ветка — `?` из этих токенов и `bodyLines`
 /// (вложения текущей линии), остальные (`elif`/`else`) — линии `?` ниже.
 /// Возвращает токены, в которых `?` + условие заменены результатом цепочки.
-/// `?` без условия — это else: блок выполняется безусловно.
+/// `?` без условия — это `else`: структура выполняется безусловно.
 ///
-/// Возвращает `None`, если блока-выражения нет — тогда это обычные токены.
+/// Возвращает `None`, если структуры с вложением нет — тогда это обычные токены.
 pub fn replaceConditionExpression(
   tokens: &[Token],
   bodyLines: &Option< Vec< Arc<RwLock<Line>> > >,
@@ -160,14 +158,17 @@ pub fn replaceConditionExpression(
 ) -> Option< Vec<Token> >
 {
   let questionIndex: usize = tokens.iter().position(|t| *t.getDataType() == TokenType::Question)?;
-  // Если после `?` нет условия, то это else: блок выполняется безусловно `a := ? { = 1 }`.
+  // Если после `?` нет условия, то это `else`: структура выполняется безусловно;
+  //
+  // Например: `a := ? { = 1 }`.
+  //
   let hasCondition: bool = questionIndex + 1 < tokens.len();
 
   let mut branches: Vec<ConditionBranch> = vec![ConditionBranch {
     condition: if hasCondition { Some(tokens[questionIndex + 1..].to_vec()) } else { None },
     body: bodyLines.clone()
   }];
-  // Если первый блок уже else, то цепочка закончена: `?` ниже начинает новую.
+  // Если первое условие уже `else`, то цепочка закончена: `?` ниже начинает новую.
   if hasCondition {
     branches.extend(collectConditionBranches(parentLink));
   }

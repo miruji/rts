@@ -191,8 +191,8 @@ impl Structure
       {
         let currentStructure: RwLockReadGuard<Self> = currentStructureLink.read().unwrap();
 
-        // Если в текущем пространстве есть такая структура и у неё есть линии -
-        // берём именно её; иначе поднимаемся выше (из блока `? { }` видна и структура выше блока).
+        // Если в текущем пространстве есть такая структура и у неё есть линии - берём именно её;
+        // Иначе поднимаемся выше (из структуры с условием `? { }` видна структура выше).
         let hasLines: bool =
           if let Some(childStructureLink) = currentStructure.getStructureByScope(&link[0]) {
             childStructureLink.read().unwrap().lines.as_ref()

@@ -129,10 +129,10 @@ pub fn readStructureLines(structureLink: Arc<RwLock<Structure>>) -> ()
             .expressionWith(tokens, &bridge::FfiExpect::Discard);
         }
       } else
-      { // `searchStructure` обработал структуру (например `?`-блок).
-        //
-        // Если после этого у метода появился `result` — внутри блока был `:=`,
-        // который поднялся до этого метода. Прерываем чтение.
+      { // `searchStructure` обработал структуру.
+        // 
+        // Например, структуру с условием (`?`); Если после этого у структуры появился `result` —
+        // внутри структуры был `:=`, который поднялся до этой структуры. Прерываем чтение.
         if structureLink.read().unwrap().result.is_some() {
           break
         }
@@ -158,7 +158,7 @@ pub fn readStructureLines(structureLink: Arc<RwLock<Structure>>) -> ()
   //
   // Внутри `scope` дропается (если был создан) вместе с библиотеками
   // и `AllocatedMemory`, привязанными к нему. Делаем это после сброса
-  // `lineIndex`, чтобы можно было перезапустить блок — повторный запуск
+  // `lineIndex`, чтобы можно было перезапустить структуру — повторный запуск
   // снова пушнет свой слот.
   if isFfi {
     scopeStack::exitFfiBlock();

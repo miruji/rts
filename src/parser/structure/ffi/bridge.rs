@@ -14,7 +14,7 @@ use crate::tokenizer::types::tokenType::TokenType;
 /// Мост Token ⟶ ABI StructureType::Primitive(PrimitiveType::String).
 ///
 /// StructureType не-custom типы — хардкод примитивов,
-/// т.к. ABI chillffi сильно ограничен. String — единственный ABI-примитив,
+/// т.к. ABI `chillffi` сильно ограничен. String — единственный ABI-примитив,
 /// у которого есть заранее подготовленные поля (.pointer .length), поэтому
 /// только для него нужен явный мост из токена в 2 поля.
 /// 
@@ -25,7 +25,7 @@ use crate::tokenizer::types::tokenType::TokenType;
 /// Работает аддитивно: не трогает `.lines` структуры (там остаётся исходный
 /// токен, поэтому голое имя `str` в `lib.print(str)` по-прежнему резолвится
 /// в TokenType::String через обычный linkExpression() и идет в
-/// FfiArgValue::String ниже — chillffi сам разложит его на pointer+len).
+/// FfiArgValue::String ниже — `chillffi` сам разложит его на pointer+len).
 /// Вызывать после того, как `.lines` структуры уже выставлены.
 //
 // todo rewrite desc
@@ -70,7 +70,7 @@ pub fn stringFields(token: &Token) -> Option<[Arc<RwLock<Structure>>; 2]>
 
 /// Конкретный типизированный аргумент FFI, который можно положить в `CallBuilder::arg::<T>`.
 ///
-/// chillffi жёстко разделяет `Value` (приватный enum) и публичный
+/// `chillffi` жёстко разделяет `Value` (приватный enum) и публичный
 /// `CallBuilder::arg::<T: FfiArg>(...)` — `Value` снаружи не сконструируешь,
 /// поэтому единственный путь — превратить динамический `Token` в один
 /// из известных типов и завернуть через typed builder.
@@ -210,7 +210,7 @@ fn signedToken(value: i64) -> Token
 fn floatToken(text: String, negative: bool) -> Token
 {
   let mut text: String = text;
-  // Rust печатает 4.0 как "4" — возвращаем точку, 
+  // Rust печатает `4.0` как `4` — возвращаем точку, 
   // чтобы это оставалось числом с плавающей точкой.
   if !text.contains(['.', 'e', 'E', 'N', 'i']) {
     text.push_str(".0");
@@ -278,7 +278,7 @@ fn callWithResult<'a, 'g>(builder: CallBuilder<'a, 'g>, expect: &FfiExpect) -> R
       let value: f64 = builder.result::<f64>().map_err(error)?;
       Ok(floatToken(value.to_string(), value.is_sign_negative()))
     }
-    // todo True/False (issue #65), String/CString/RawString (нужна длина), Custom и т.д.
+    // todo `True`/`False` (issue #65), `String`/`CString`/`RawString` (нужна длина), `Custom` и т.д.
     other => Err(format!("Unsupported FFI result type: {}", other.to_string()))
   }
 }
@@ -288,11 +288,11 @@ fn callWithResult<'a, 'g>(builder: CallBuilder<'a, 'g>, expect: &FfiExpect) -> R
 /// Загружает библиотеку и зовёт её метод через переданный `Scope<'g>`.
 ///
 /// Используется внутри структур `[ffi] { ... }`, чтобы удерживать один и тот же
-/// `chillffi` `scope` на всём протяжении блока (Scope Retention).
+/// `chillffi` `scope` на всём протяжении структуры (Scope Retention).
 /// 
-/// На каждый вызов FFI внутри блока используется один и тот же `scope` —
+/// На каждый вызов FFI внутри структуры используется один и тот же `scope` —
 /// соответственно, загруженные через `scope.load(...)` библиотеки и
-/// `AllocatedMemory` живут, пока живёт блок, и освобождаются при его выходе.
+/// `AllocatedMemory` живут, пока живёт структура, и освобождаются при его выходе.
 ///
 /// Возвращает результат C-функции в виде токена; тип результата задаёт `expect`.
 pub fn callExternalWithScope<'g>(
@@ -303,11 +303,11 @@ pub fn callExternalWithScope<'g>(
   expect: &FfiExpect
 ) -> Result<Token, String>
 {
-  // Загружаем библиотеку в удерживаемом scope.
+  // Загружаем библиотеку в удерживаемом `scope`.
   let library: Library<'g> = scope.load(libraryPath)
     .map_err(|e| e.to_string())?;
 
-  // Конвертируем аргументы и приклеиваем к CallBuilder через typed .arg::<T>().
+  // Конвертируем аргументы и приклеиваем к `CallBuilder` через typed `.arg::<T>()`.
   let mut builder: CallBuilder<'_, 'g> = library.call(methodName);
   for token in parametersTokens.iter_mut()
   {
@@ -319,11 +319,12 @@ pub fn callExternalWithScope<'g>(
   callWithResult(builder, expect)
 }
 
-/// Старый путь вызова FFI — без удержания scope.
+/// Старый путь вызова FFI — без удержания `scope`.
 ///
-/// Создаёт временный scope через `ffi!{...}` макрос на каждый вызов, как и раньше.
-/// Используется, когда вызов идёт вне `[ffi]` блока:
-/// внутри блока — `callExternalWithScope`, снаружи — `callExternal`.
+/// Создаёт временный scope через `ffi!{...}` макрос на каждый вызов.
+/// 
+/// Используется, когда вызов идёт вне структуры с тегом `[ffi]`:
+/// внутри структуры — `callExternalWithScope`, снаружи — `callExternal`.
 pub fn callExternal(
   libraryPath: &str,
   methodName: &str,
@@ -331,9 +332,9 @@ pub fn callExternal(
   expect: &FfiExpect
 ) -> Result<Token, String>
 {
-  // ffi!{} возвращает Result<_, FFIError> — конвертируем в String на выходе.
-  // Токен результата — обычные данные (не адрес и не ссылка на память scope),
-  // поэтому спокойно живёт после выхода из ffi!{}.
+  // `ffi!{}` возвращает `Result<_, FFIError>` — конвертируем в `String` на выходе.
+  // Токен результата — обычные данные (не адрес и не ссылка на память `scope`),
+  // поэтому спокойно живёт после выхода из `ffi!{}`.
   let result: Result<Token, FFIError> = ffi!(|scope| {
     callExternalWithScope(
       &scope,
@@ -391,11 +392,11 @@ mod tests
     assert!(dataOf(&signedToken(0)) == (TokenType::UInt, String::from("0")));
   }
 
-  /// Аргумент FFI: число за пределами u64 и i64 становится границей (#71), а не обрезается;
+  /// Аргумент FFI: число за пределами `u64` и `i64` становится границей (#71), а не обрезается;
   #[test]
   fn argBigNumbers() -> ()
   {
-    let big: &str = "44444444444444444444444444444444444444444444"; // 44 цифры
+    let big: &str = "44444444444444444444444444444444444444444444"; // 44 цифры.
     let negBig: String = format!("-{}", big);
     
     fn arg(tokenType: TokenType, data: &str) -> Result<FfiArgValue, String> {
@@ -433,7 +434,7 @@ mod tests
   }
 
   /// `a = libc.strnlen("hello world")` — тип слева не указан, тип выводится
-  /// из величины значения (не Usize) — см. assert ниже: U8, не Usize.
+  /// из величины значения (не `Usize`) — см. assert ниже: `U8`, не `Usize`.
   #[test]
   fn inferUnsigned() -> ()
   {
@@ -447,7 +448,7 @@ mod tests
     assert!(result.clone().getStructureType() == StructureType::Primitive(PrimitiveType::U8)); // Как у примитива `a = 11`.
   }
 
-  /// Знаковые результаты: `>= 0` это UInt, `< 0` это Int (как у примитивов).
+  /// Знаковые результаты: `>= 0` это `UInt`, `< 0` это `Int` (как у примитивов).
   #[test]
   fn typedSigned() -> ()
   {
@@ -533,11 +534,11 @@ mod tests
       vec![], 
       FfiExpect::Typed(StructureType::Primitive(PrimitiveType::I32))
     ).unwrap();
-    // chillffi исполняет вызовы в worker-процессе, поэтому pid не равен pid текущего процесса
+    // `chillffi` исполняет вызовы в worker-процессе, поэтому `pid` не равен `pid` текущего процесса
     assert!(dataOf(&result).1.parse::<i32>().unwrap() > 0);
   }
 
-  /// Типы без поддержки результата и несуществующие методы — ошибка (в выражении станет None).
+  /// Типы без поддержки результата и несуществующие методы — ошибка (в выражении станет `None`).
   #[test]
   fn errors() -> ()
   {

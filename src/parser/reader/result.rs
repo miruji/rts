@@ -46,9 +46,9 @@ pub fn searchReturnLine(
   // Редактируемый родитель, поскольку мы собираемся присвоить значение его `result`.
   let newResultData: Token =
   {
-    // Блок-выражение `= ? True { = 1 }`: `?` + условие заменяются результатом;
+    // Структура с условием `= ? True { = 1 }`: `?` + условие заменяются результатом;
     //
-    // Блоки выполняются без удержания блокировки на структуре.
+    // Структуры выполняются без удержания блокировки.
     if let Some(replaced) = 
       replaceConditionExpression(&lineTokens, &line.lines, &structureLink) {
         lineTokens = replaced;
