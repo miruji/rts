@@ -1,15 +1,15 @@
 use crate::parser::testing::checkStructure;
 // =================================================================================================
 
-// Тесты на приравнивание условной структуры с правой стороны
-// к структуре с левой стороны.
+// Тесты на приравнивание структуры с условием с левой стороны к
+// структуре с правой стороны.
 
 // =================================================================================================
 // Значение структуры.
 
 /// `? True { = 20 }` — структура выполняется, `result` становится значением.
 #[test]
-fn blockExpression() -> ()
+fn trueCondition() -> ()
 {
   checkStructure!(
     r#"
@@ -21,7 +21,7 @@ fn blockExpression() -> ()
 
 /// `? False { = 99 }` — структура не выполняется, `a` получает `None`.
 #[test]
-fn blockExpressionFalse() -> ()
+fn falseCondition() -> ()
 {
   checkStructure!(
     r#"
@@ -33,7 +33,7 @@ fn blockExpressionFalse() -> ()
 
 /// Условие — не только `True`, но и выражение: `n = 5`.
 #[test]
-fn blockExpressionCondition() -> ()
+fn condition() -> ()
 {
   checkStructure!(
     r#"
@@ -46,7 +46,7 @@ fn blockExpressionCondition() -> ()
 
 /// Пустая структура возвращает `None` — нет `=`, нет `result`.
 #[test]
-fn blockExpressionEmpty() -> ()
+fn emptyStructure() -> ()
 {
   checkStructure!(
     r#"
@@ -57,11 +57,11 @@ fn blockExpressionEmpty() -> ()
 }
 
 // =================================================================================================
-// Структура без условия.
+// Структура с условием, но без самого условия — т.е. `else`.
 
 /// `?` без условия — это else: структура выполняется безусловно, `a` получает его `result`.
 #[test]
-fn blockExpressionWithoutCondition() -> ()
+fn withoutCondition() -> ()
 {
   checkStructure!(
     r#"
@@ -71,15 +71,16 @@ fn blockExpressionWithoutCondition() -> ()
   );
 }
 
-/// Структура без условия завершает цепочку: `?` ниже — это отдельная структура, а не `elif`.
+/// `?` без условия завершает цепочку: `?` ниже — это отдельная структура, а не `elif`.
 #[test]
-fn blockExpressionWithoutConditionEndsChain() -> ()
+fn withoutConditionEndsChain() -> ()
 {
   checkStructure!(
     r#"
     m~: U8 = 0
-    a := ? { = 1 }
-    ? { m = 7 }
+    a :=
+      ? { = 1 }
+      ? { m = 7 }
     "#,
     "m", value "7"
   );
@@ -92,7 +93,7 @@ fn blockExpressionWithoutConditionEndsChain() -> ()
 ///
 /// Результат структуры не должен читаться как примитив `a := None` (он удаляет структуру).
 #[test]
-fn blockExpressionFalseIsNone() -> ()
+fn falseIsNone() -> ()
 {
   checkStructure!(
     r#"
@@ -106,7 +107,7 @@ fn blockExpressionFalseIsNone() -> ()
 
 /// Структура выполнится, но `result` в нём нет: `a` создаётся и равна `None`.
 #[test]
-fn blockExpressionEmptyIsNone() -> ()
+fn emptyIsNone() -> ()
 {
   checkStructure!(
     r#"
@@ -123,13 +124,14 @@ fn blockExpressionEmptyIsNone() -> ()
 
 /// `else` у выражения: условие ложно — значением становится результат `else`.
 #[test]
-fn blockExpressionElse() -> ()
+fn r#else() -> ()
 {
   checkStructure!(
     r#"
     n := 3
-    a := ? n = 5 { = 1 }
-    ? { = 2 }
+    a :=
+      ? n = 5 { = 1 }
+      ? { = 2 }
     "#,
     "a", value "2"
   );
@@ -138,54 +140,59 @@ fn blockExpressionElse() -> ()
 /// `else` у выражения: условие истинно — `else` не выполняется
 /// ни как значение, ни как побочный эффект.
 #[test]
-fn blockExpressionElseSkipped() -> ()
+fn elseSkipped() -> ()
 {
   checkStructure!(
     r#"
     n := 5
-    a := ? n = 5 { = 1 }
-    ? { = 2 }
+    a :=
+      ? n = 5 { = 1 }
+      ? { = 2 }
     "#,
     "a", value "1"
   );
   checkStructure!(
     r#"
     m~: U8 = 0
-    a := ? True { = 1 }
-    ? { m = 9 }
+    a :=
+      ? True { = 1 }
+      ? { m = 9 }
     "#,
     "m", value "0"
   );
 }
 
-/// `elif`/`else` у выражения: берётся первая подходящая ветка.
+/// `elif`/`else`: работа первой подходящей по условию структуры.
 #[test]
-fn blockExpressionElif() -> ()
+fn elif() -> ()
 {
   checkStructure!(
     r#"
     n := 1
-    a := ? n = 1 { = 10 }
-    ? n = 2 { = 20 }
-    ? { = 30 }
+    a :=
+      ? n = 1 { = 10 }
+      ? n = 2 { = 20 }
+      ? { = 30 }
     "#,
     "a", value "10"
   );
   checkStructure!(
     r#"
     n := 2
-    a := ? n = 1 { = 10 }
-    ? n = 2 { = 20 }
-    ? { = 30 }
+    a :=
+      ? n = 1 { = 10 }
+      ? n = 2 { = 20 }
+      ? { = 30 }
     "#,
     "a", value "20"
   );
   checkStructure!(
     r#"
     n := 3
-    a := ? n = 1 { = 10 }
-    ? n = 2 { = 20 }
-    ? { = 30 }
+    a :=
+      ? n = 1 { = 10 }
+      ? n = 2 { = 20 }
+      ? { = 30 }
     "#,
     "a", value "30"
   );
@@ -196,7 +203,7 @@ fn blockExpressionElif() -> ()
 
 /// `result` вложенной структуры из выражения `= ? True { = 1 }`.
 #[test]
-fn blockExpressionNested() -> ()
+fn nested() -> ()
 {
   checkStructure!(
     r#"
@@ -208,13 +215,14 @@ fn blockExpressionNested() -> ()
 
 /// `elif`/`else` читаются в той структуре, где оно лежит.
 #[test]
-fn blockExpressionNestedElse() -> ()
+fn nestedElse() -> ()
 {
   checkStructure!(
     r#"
     a := ? True {
-      = ? False { = 1 }
-      ? { = 2 }
+      =
+        ? False { = 1 }
+        ? { = 2 }
     }
     "#,
     "a", value "2"
@@ -227,7 +235,7 @@ fn blockExpressionNestedElse() -> ()
 /// Правая часть читается полностью: `?` + условие заменяются результатом структуры,
 /// остальные токены остаются в выражении (`1 + (структура)` = 3).
 #[test]
-fn blockExpressionPrefix() -> ()
+fn prefix() -> ()
 {
   checkStructure!(
     r#"
@@ -240,12 +248,13 @@ fn blockExpressionPrefix() -> ()
 /// `elif`/`else` в выражении с другими токенами:
 /// результат выбранной ветки подставляется в `10 - ...`.
 #[test]
-fn blockExpressionPrefixElse() -> ()
+fn prefixElse() -> ()
 {
   checkStructure!(
     r#"
-    b := 10 - ? False { = 2 }
-    ? { = 4 }
+    b := 10 -
+      ? False { = 2 }
+      ? { = 4 }
     "#,
     "b", value "6"
   );
@@ -258,7 +267,7 @@ fn blockExpressionPrefixElse() -> ()
 //  токены в скобках читаются отдельными линиями, и аргумент не получает значения (сейчас `0`).
 #[test]
 #[ignore = "todo: Условие в скобках вызова"]
-fn blockExpressionInCall() -> ()
+fn conditionInCall() -> ()
 {
   checkStructure!(
     r#"
@@ -276,7 +285,7 @@ fn blockExpressionInCall() -> ()
 
 /// `:=` внутри структуры возвращает результат, остальное не читается.
 #[test]
-fn blockExpressionEarlyReturn() -> ()
+fn conditionEarlyReturn() -> ()
 {
   checkStructure!(
     r#"
@@ -295,7 +304,7 @@ fn blockExpressionEarlyReturn() -> ()
 
 /// `a = ? True { = 20 }` — присваивание в существующую структуру.
 #[test]
-fn blockExpressionAssign() -> ()
+fn conditionAssign() -> ()
 {
   checkStructure!(
     r#"

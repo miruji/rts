@@ -37,7 +37,7 @@ pub(super) const fn isMathOperator(dataType: TokenType) -> bool
 /// 
 /// - Линейное выражение ⟶ [searchLinearStructure`];
 /// 
-/// - Условная структура ⟶ [`executeConditionStatement`].
+/// - Структура с условием ⟶ [`executeConditionStatement`].
 //
 // todo Я всё ещё думаю, что его стоит переименовать. Потому что он ищет структуры да,
 //  но не совсем так. По сути он ищет последовательности, которые приводят к их созданию.
@@ -109,7 +109,7 @@ pub fn searchStructure(
   if *firstTokenType == TokenType::Question && !lineLines.is_none()
   { // В том случае, если это не структура и не линейное выражение, 
     // мы видим `TokenType::Question` в начале строки и
-    // есть вложения у этой линии, то это условное вложение.
+    // есть вложения у этой линии, то это структура с условием.
     return executeConditionStatement(lineTokens, &lineLines, &structureLink);
   }
 

@@ -961,7 +961,7 @@ impl Structure
                     let mut parametersTokens: Vec<Token> = parameters.getAllExpressions(self).unwrap_or_default();
 
                     // Вызов через FFI.
-                    // Если мы внутри FFI блока — используем `scope retention`. 
+                    // Если мы внутри FFI структуры — используем `scope retention`. 
                     // Иначе —  временный scope через макрос.
                     // Тип результата задаёт expect: `Discard` / `Infer` / `Typed` (см. `bridge::FfiExpect`).
                     // todo Заменить string на abi-ffi
@@ -969,7 +969,7 @@ impl Structure
                       scopeStack::withCurrentFfiScope(|scope| {
                         callExternalWithScope(scope, &libraryPath, &methodName, &mut parametersTokens, expect)
                       }) 
-                    { result } // Мы внутри FFI блока — scope уже удержан.
+                    { result } // Мы внутри FFI структуры — `scope` уже удержан.
                     // Временный `scope`.
                     else { callExternal(&libraryPath, &methodName, &mut parametersTokens, expect) };
                     
