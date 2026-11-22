@@ -186,7 +186,7 @@ impl Structure
 
                     // ABI-композит `String`: `.pointer`/`.length`;
                     //
-                    // Считаем до перемещения токена в lines ниже.
+                    // Считаем до перемещения токена в `lines` ниже.
                     let stringFields: Option<[Arc<RwLock<Self>>; 2]> = 
                       if calledStructureStructure.dataType == StructureType::Primitive(PrimitiveType::String) {
                         bridge::stringFields(&token)
@@ -194,7 +194,7 @@ impl Structure
                         None
                       };
                     
-                    // Устанавливаем lines параметра как линию с одним токеном – переданным значением.
+                    // Устанавливаем `lines` параметра как линию с одним токеном – переданным значением.
                     calledStructureStructure.lines = Some(vec![
                       Arc::new(RwLock::new(Line {
                         tokens: Some(vec![token]),
@@ -203,9 +203,9 @@ impl Structure
                     ]);
 
                     if let Some(fields) = stringFields
-                    { // Сбрасываем возможные поля с предыдущего вызова — pushStructure
-                      // только добавляет, а calledStructureStructure переиспользуется
-                      // между вызовами (см. todo выше про отсутствие копии структуры).
+                    { // Сбрасываем возможные поля с предыдущего вызова — `pushStructure`
+                      // только добавляет, а `calledStructureStructure` переиспользуется
+                      // между вызовами (см. todo Выше про отсутствие копии структуры).
                       *calledStructureStructure.structures.write().unwrap() = None;
                       for field in fields { calledStructureStructure.pushStructure(field); }
                     }

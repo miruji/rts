@@ -179,7 +179,7 @@ mod tests
     let second: Option< Rc<RefCell< Option<FFIScope> >> > = ensureFfiScope();
     assert!(first.is_some());
     assert!(second.is_some());
-    // Один и тот же Rc на слот — это и есть «scope удерживается».
+    // Один и тот же `Rc` на слот — это и есть `scope удерживается`.
     assert!(Rc::ptr_eq(&first.unwrap(), &second.unwrap()));
     exitFfiBlock();
   }

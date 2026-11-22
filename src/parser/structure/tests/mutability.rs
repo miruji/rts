@@ -113,7 +113,7 @@ fn constantTyped() -> ()
   );
 }
 
-/// `a: U8 := -10` — знаковый литерал к `U8`, mut `Constant`.
+/// `a: U8 := -10` — знаковый примитив к `U8`, mut `Constant`.
 #[test]
 fn constantSigned() -> ()
 {

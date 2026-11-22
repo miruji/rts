@@ -254,11 +254,12 @@ pub(super) fn printStructureFacets(
 /// Грани: `type` - тип токена (`type(a)` в `.rt`), `stype` - тип структуры (`stype(a)`),
 /// `utype` - полный объявленный тип: набор вариантов объединения (`utype(a)`), а без
 /// объединения он равен `stype`; `value` - значение (`{a}`).
-/// Две формы, имя структуры всегда строкой (`&str`/литерал; путь через точку: `"m.a"`):
-/// ```ignore
-/// checkStructure!("a := 10", "a", value "10"); // Код
 /// 
-/// checkStructure!(main, "a", value "10"); // Выполненный `main`
+/// Две формы, имя структуры всегда строкой:
+/// ```ignore
+/// checkStructure!("a := 10", "a", value "10"); // Код.
+/// 
+/// checkStructure!(main, "a", value "10"); // Выполненный `main`.
 /// ````
 ///
 /// Паникует на первой неверной грани; `tryCheckStructure!` вместо паники возвращает `Err`.
@@ -549,7 +550,7 @@ pub(super) use tryCheckStructure;
 
 /// Выполняет код и возвращает основную структуру `main`.
 ///
-/// Код с переносами - сырым литералом `r#"..."#`, без `\n` внутри строки:
+/// Код с переносами - сырой строкой `r#"..."#`, без `\n` внутри строки:
 /// ```ignore
 /// let mainLink: Arc<RwLock<Structure>> = runCode!(r#"
 ///   a = 5
@@ -594,7 +595,7 @@ pub(super) use runCode;
 /// `utype` - полный объявленный тип (`utype(a)`), `value` - значение (`{a}`),
 /// `mut` - уровень изменения, `lines` - сколько строк внутри.
 /// У метода и модуля токена нет — `type`/`value` печатаются как `<none>`.
-/// Грань хотя бы одна: ровно перечисленное, «все сразу» без перечисления - нет.
+/// Грань хотя бы одна: ровно перечисленное, `все сразу` без перечисления - нет.
 ///
 /// Вывод в консоль:
 /// ```text
@@ -604,8 +605,8 @@ pub(super) use runCode;
 /// ```
 macro_rules! showStructure
 {
-  // `showStructure!(main, "a.bHello", stype)` — выполненная структура, путь
-  // и грани без ожиданий.
+  // `showStructure!(main, "a.bHello", stype)` — выполненная структура,
+  // путь и грани без ожиданий.
   ($main:expr, $name:expr $(, $facet:ident)+ $(,)?) =>
   {{
     let main = &$main;
@@ -762,7 +763,7 @@ pub(super) fn relativePathFrom(absolute: &str, dir: Option<&str>) -> String
 /// writeCodeFile!(dir, code) // ⟶ `{dir}/{id}.rt` (несколько файлов в одной папке для `import`)
 /// ```
 /// 
-/// Литерал проходит через `format!`: `{libraryPath}` / `{rel}` подставляются из scope.
+/// Rust литерал проходит через `format!`: `{libraryPath}` / `{rel}` подставляются из `scope`.
 /// Уже готовая `String` пишется как есть (без повторного `format!`).
 /// 
 /// ```ignore
@@ -774,7 +775,7 @@ pub(super) fn relativePathFrom(absolute: &str, dir: Option<&str>) -> String
 /// ```
 macro_rules! writeCodeFile
 {
-  // Литерал — format! (подстановка `{name}` из окружающего scope).
+  // Rust литерал — `format!` (подстановка `{name}` из окружающего scope).
   ($code:literal) =>
   {{
     let id: usize = $crate::parser::testing::FileCounter.fetch_add(1, std::sync::atomic::Ordering::Relaxed);

@@ -16,7 +16,7 @@ pub const fn isDigit(byte: u8) -> bool
 /// оператором member-access (`obj.field`).
 ///
 /// Числовая точка: после опциональных пробелов идёт цифра,
-/// либо это «голая» точка (конец буфера / не буква и не `_`).
+/// либо это `голая` точка (конец буфера / не буква и не `_`).
 pub fn isFloatDotStart(buffer: &[u8], index: usize, bufferLength: usize) -> bool
 {
   if index >= bufferLength || buffer[index] != b'.' {
