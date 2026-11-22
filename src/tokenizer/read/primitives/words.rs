@@ -4,7 +4,7 @@ use crate::tokenizer::types::token::{Token};
 use crate::tokenizer::types::tokenType::TokenType;
 // =================================================================================================
 
-/// Проверяет что байт является буквой a-z A-Z.
+/// Проверяет что байт является буквой `a-z` / `A-Z`.
 pub const fn isLetter(byte: u8) -> bool
 {
   (byte|32) >= b'a' && (byte|32) <= b'z'
@@ -12,11 +12,12 @@ pub const fn isLetter(byte: u8) -> bool
 
 // =================================================================================================
 
-/// Проверяет buffer по index и так находит возможные слова;
-/// Из них также выделяет сразу определяемые зарезервированные
+/// Читает `buffer` по `index` и так находит `Token` слова;
+///
+/// Здесь сразу находятся зарезервированные языком слова.
 pub fn getWord(buffer: &[u8], index: &mut usize, bufferLength: usize) -> Token
 {
-  let mut savedIndex: usize = *index; // index buffer
+  let mut savedIndex: usize = *index; // Index buffer.
   let mut result: String = String::from(buffer[savedIndex] as char);
   savedIndex += 1;
   let mut isLink: bool = false;
@@ -27,20 +28,20 @@ pub fn getWord(buffer: &[u8], index: &mut usize, bufferLength: usize) -> Token
     currentByte = buffer[savedIndex]; // Значение текущего символа.
 
     // Пропуск пустот;
-    // В языке нет наводящих слов статуса - поэтому не будет `let a`.
+    // В языке нет наводящих слов статуса — поэтому не будет `let a`.
     if currentByte == b' ' || currentByte == b'\t'
     {
       savedIndex += 1;
       continue;
     }
     
-    if (isDigit(currentByte) || currentByte == b'.') || // Либо число, либо . как ссылка.
-      (isLink && (currentByte == b'[' || currentByte == b']')) // В случае ссылки мы можем читать динамические [].
+    if (isDigit(currentByte) || currentByte == b'.') || // Либо число, либо `.` как ссылка.
+      (isLink && (currentByte == b'[' || currentByte == b']')) // В случае ссылки мы можем читать динамические `[]`.
     {
       result.push(currentByte as char);
       savedIndex += 1;
       if currentByte == b'.'
-      { // Только если есть . то мы знаем что это ссылка.
+      { // Только если есть `.` то мы знаем, что это ссылка.
         isLink = true;
       }
 
@@ -60,7 +61,9 @@ pub fn getWord(buffer: &[u8], index: &mut usize, bufferLength: usize) -> Token
       {
         result.push(currentByte as char);
         savedIndex += 1;
-      } else { break; }
+      } else {
+        break;
+      }
       //
     }
   }
@@ -69,15 +72,15 @@ pub fn getWord(buffer: &[u8], index: &mut usize, bufferLength: usize) -> Token
 
   //
   if isLink
-  { // Ссылка
+  { // Ссылка.
     Token::new(TokenType::Link, result)
   } else
   { // Обычное или ключевое слово.
     //
     // Ключевые слова здесь только значения: `True`, `False` и `None`.
-    // Имена типов (`String`, `U8`, `Any` и так далее) - это обычные слова,
+    // Имена типов (`String`, `U8`, `Any` и так далее) — это обычные слова,
     // их читает парсер: по скобке он понимает, что это вызов,
-    // а по реестру примитивов - что это имя типа.
+    // а по реестру примитивов — что это имя типа.
     match result.as_str()
     {
       "True" => Token::new(TokenType::True, result),

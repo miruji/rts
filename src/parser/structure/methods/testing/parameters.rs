@@ -41,7 +41,7 @@ fn picksVariant() -> ()
   );
 }
 
-/// Значение не подходит ни к одному варианту - оно становится `None`.
+/// Значение не подходит ни к одному варианту — оно становится `None`.
 #[test]
 fn noVariant() -> ()
 {
@@ -206,7 +206,7 @@ fn likeCastMethod() -> ()
     value "5"
   );
 
-  // Отрицательное в беззнаковом параметре - граница типа, как `U8(-10)`.
+  // Отрицательное в беззнаковом параметре — граница типа, как `U8(-10)`.
   checkStructure!(
     r#"
     f(x: U8) { = x }
@@ -218,7 +218,7 @@ fn likeCastMethod() -> ()
     value "0"
   );
 
-  // `None`-параметр - отсутствие значения, как `None(5)`.
+  // `None`-параметр — отсутствие значения, как `None(5)`.
   checkStructure!(
     r#"
     f(x: None) { = x }
@@ -232,7 +232,7 @@ fn likeCastMethod() -> ()
 }
 
 /// Для каждого примитива параметр с его типом даёт то же значение,
-/// что и метод приведения: `f(p: P) { = p } a := f(5)` - это `a := P(5)`.
+/// что и метод приведения: `f(p: P) { = p } a := f(5)` — это `a := P(5)`.
 #[test]
 fn everyPrimitiveParamIsCast() -> ()
 {
@@ -242,7 +242,7 @@ fn everyPrimitiveParamIsCast() -> ()
     let main: Arc<RwLock<Structure>> = runCode!(&code);
 
     if name == "None"
-    { // `None` - это отсутствие значения.
+    { // `None` — это отсутствие значения.
       checkStructure!(main, "a", type None, value "");
     } else
     if name == "F32" || name == "F64"

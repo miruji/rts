@@ -2,7 +2,7 @@
 
 /// Считает количество подряд идущих `#`, начиная с buffer[index];
 /// 
-/// Ограничено 3 - это максимальный уровень метки комментария.
+/// Ограничено 3 — это максимальный уровень метки комментария.
 const fn hashRunLength(buffer: &[u8], index: usize, bufferLength: usize) -> usize
 {
   let mut length: usize = 0;
@@ -16,11 +16,11 @@ const fn hashRunLength(buffer: &[u8], index: usize, bufferLength: usize) -> usiz
 /// Пропускает комментарий любого уровня, начиная с buffer[*index] == b'#';
 /// Определяет уровень по количеству `#` и передаёт чтение дальше
 ///
-/// `#` - до конца строки строго; либо до `##`/`###`, если они встретились раньше
+/// `#` — до конца строки строго; либо до `##`/`###`, если они встретились раньше
 /// 
-/// `##` - `\n` игнорируется, идёт до закрывающей `##`; либо до `#` или `###`
+/// `##` — `\n` игнорируется, идёт до закрывающей `##`; либо до `#` или `###`
 /// 
-/// `###` - `\n`, `#` и `##` внутри игнорируются, идёт строго до закрывающей `###`;
+/// `###` — `\n`, `#` и `##` внутри игнорируются, идёт строго до закрывающей `###`;
 /// удобно для комментирования больших участков кода с комментами внутри.
 pub const fn deleteComment(buffer: &[u8], index: &mut usize, bufferLength: usize) -> ()
 {
@@ -36,15 +36,15 @@ pub const fn deleteComment(buffer: &[u8], index: &mut usize, bufferLength: usize
   //
 }
 
-/// `#` - идёт строго до конца строки;
+/// `#` — идёт строго до конца строки;
 /// 
-/// прерывается раньше, если встретил `##` или `###` - они не потребляются.
+/// прерывается раньше, если встретил `##` или `###` — они не потребляются.
 const fn deleteSingleComment(buffer: &[u8], index: &mut usize, bufferLength: usize) -> ()
 {
   while *index < bufferLength && buffer[*index] != b'\n'
   {
     if buffer[*index] == b'#' && hashRunLength(buffer, *index, bufferLength) >= 2
-    { // Началась ## или ### - строчный комментарий обрываем здесь
+    { // Началась `##` или `###` — строчный комментарий обрываем здесь
       return;
     }
     *index += 1;
@@ -52,9 +52,9 @@ const fn deleteSingleComment(buffer: &[u8], index: &mut usize, bufferLength: usi
   //
 }
 
-/// `##` - `\n` игнорируется, читает до закрывающей `##`;
+/// `##` — `\n` игнорируется, читает до закрывающей `##`;
 /// 
-/// на одиночном `#` или на `###` обрывается раньше - они не потребляются.
+/// на одиночном `#` или на `###` обрывается раньше — они не потребляются.
 const fn deleteDoubleComment(buffer: &[u8], index: &mut usize, bufferLength: usize) -> ()
 {
   while *index < bufferLength
@@ -63,8 +63,8 @@ const fn deleteDoubleComment(buffer: &[u8], index: &mut usize, bufferLength: usi
     {
       match hashRunLength(buffer, *index, bufferLength)
       {
-        2 => { *index += 2; return; } // Нашли закрывающую ## - потребляем.
-        _ => { return; }              // Одиночный # или ### - обрыв без потребления.
+        2 => { *index += 2; return; } // Нашли закрывающую `##` — потребляем.
+        _ => { return; } // Одиночный `#` или `###` — обрыв без потребления.
       }
     }
     *index += 1;
@@ -72,7 +72,7 @@ const fn deleteDoubleComment(buffer: &[u8], index: &mut usize, bufferLength: usi
   //
 }
 
-/// `###` - `\n`, `#` и `##` внутри игнорируются;
+/// `###` — `\n`, `#` и `##` внутри игнорируются;
 /// 
 /// читает строго до закрывающей `###`.
 const fn deleteTripleComment(buffer: &[u8], index: &mut usize, bufferLength: usize) -> ()
@@ -80,7 +80,7 @@ const fn deleteTripleComment(buffer: &[u8], index: &mut usize, bufferLength: usi
   while *index < bufferLength
   {
     if buffer[*index] == b'#' && hashRunLength(buffer, *index, bufferLength) >= 3
-    { // Нашли закрывающую ### - потребляем.
+    { // Нашли закрывающую `###` — потребляем.
       *index += 3;
       return;
     }
@@ -97,7 +97,7 @@ mod tests
   use crate::tokenizer::read::primitives::comments::deleteComment;
   // ===============================================================================================
 
-  /// Табличная проверка: buffer, ожидаемый index после чтения.
+  /// Табличная проверка: `buffer`, ожидаемый `index` после чтения.
   fn checkCases(cases: Vec<(&str, usize)>) -> ()
   {
     for (input, expectedIndex) in cases
@@ -112,7 +112,7 @@ mod tests
       //
       assert_eq!(
         index, expectedIndex,
-        "Для '{}' индекс должен быть {}, получен {}", input, expectedIndex, index
+        "For '{}' the index should be {}, got {}", input, expectedIndex, index
       );
     }
   }
@@ -124,7 +124,7 @@ mod tests
   fn single() -> ()
   {
     checkCases(vec![
-      ("# short\nrest ", 7), // Остановка перед \n.
+      ("# short\nrest ", 7), // Остановка перед `\n`.
       ("# end", 5), // Остановка в конце буфера.
     ]);
   }
@@ -134,8 +134,8 @@ mod tests
   fn singleInterruptedByHigherLevel() -> ()
   {
     checkCases(vec![
-      ("# text ## more\n", 7),  // "# text " ⟶ обрыв на ##
-      ("# text ### more\n", 7), // "# text " ⟶ обрыв на ###
+      ("# text ## more\n", 7), // `# text ` ⟶ обрыв на `##`.
+      ("# text ### more\n", 7), // `# text ` ⟶ обрыв на `###`.
     ]);
   }
 
@@ -146,7 +146,7 @@ mod tests
   fn double() -> ()
   {
     checkCases(vec![
-      ("## a\nb\nc ##rest", 11), // Потребляет закрывающую ##.
+      ("## a\nb\nc ##rest", 11), // Потребляет закрывающую `##`.
       ("## unterminated", 15), // До конца буфера, если нет закрытия.
     ]);
   }
@@ -156,19 +156,19 @@ mod tests
   fn doubleInterruptedByOtherLevel() -> ()
   {
     checkCases(vec![
-      ("## a\n# rest", 5), // Обрыв на одиночном #.
-      ("## a\n### rest", 5), // Обрыв на ###.
+      ("## a\n# rest", 5), // Обрыв на одиночном `#`.
+      ("## a\n### rest", 5), // Обрыв на `###`.
     ]);
   }
 
   // ===============================================================================================
 
-  /// `###` игнорирует \n, # и ##, идёт строго до закрывающей ###.
+  /// `###` игнорирует `\n`, `#` и `##`, идёт строго до закрывающей `###`.
   #[test]
   fn triple() -> ()
   {
     checkCases(vec![
-      ("### a\n# b\n## c\n###rest", 18), // # и ## внутри игнорируются.
+      ("### a\n# b\n## c\n###rest", 18), // `#` и `##` внутри игнорируются.
       ( "### unterminated", 16), // До конца буфера, если нет закрытия.
     ]);
   }

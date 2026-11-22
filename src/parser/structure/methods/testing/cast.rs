@@ -319,8 +319,11 @@ fn nested() -> ()
 /// В выражении метод режет только свой операнд, и сумма считается уже с ним.
 ///
 /// - `U8(a)` — `255`;
+/// 
 /// - `255 + 10` — `265`;
+/// 
 /// - а `c` получает тип по токену: `U16`.
+/// 
 #[test]
 fn inExpression() -> ()
 {
@@ -410,7 +413,7 @@ fn toString() -> ()
   );
 }
 
-/// Здесь `None` - это отсутствие значения, а не значение.
+/// Здесь `None` — это отсутствие значения, а не значение.
 #[test]
 fn toNone() -> ()
 {
@@ -431,7 +434,7 @@ fn everyPrimitiveIsCast() -> ()
     let main: Arc<RwLock<Structure>> = runCode!(&code);
 
     if name == "None"
-    { // `None` - это отсутствие значения.
+    { // `None` — это отсутствие значения.
       checkStructure!(main, "a", type None, value "");
     } else
     if name == "F32" || name == "F64"

@@ -13,11 +13,11 @@ use crate::tokenizer::types::tokenType::TokenType;
 ///
 /// Ссылка разбирается в два шага:
 ///
-/// 1. Голова ссылки - это либо имя структуры (`a.b.c`), либо номер линии (`a[0]`).
+/// 1. Голова ссылки — это либо имя структуры (`a.b.c`), либо номер линии (`a[0]`).
 ///    Дальше путь идёт только вниз, по уже найденной структуре.
 ///
 /// 2. В конце ссылки найденная структура либо читается (значение),
-///    либо вызывается (были скобки вызова - `parameters`).
+///    либо вызывается (были скобки вызова — `parameters`).
 ///
 /// Два разных вида ссылки дают разные ветки, но общий итог у них один:
 /// либо значение, либо ссылка, либо вызов, либо пусто.
@@ -29,7 +29,7 @@ impl Structure
   ///
   /// Ссылка на структуру может состоять как из struct name, так и просто из цифр.
   pub fn linkExpression(
-    &self, // Текущая структура - текущее пространство.
+    &self, // Текущая структура — текущее пространство.
     currentStructureLink: Option< Arc<RwLock<Self>> >, // Структура предыдущего уровня ссылки.
     link: &mut Vec<String>, // Осталось читать.
     parameters: Option< Vec<Token> >
@@ -45,11 +45,11 @@ impl Structure
     match link[0].parse::<usize>()
     { // Проверяем тип.
       Ok(lineNumber) =>
-      { // Цифра в начале ссылки - это номер линии в структуре.
+      { // Цифра в начале ссылки — это номер линии в структуре.
         self.linkByLineNumber(currentStructureLink, link, parameters, lineNumber)
       }
       Err(_) =>
-      { // Не цифра - значит это имя структуры.
+      { // Не цифра — значит это имя структуры.
         self.linkByName(currentStructureLink, link, parameters)
       }
     }
@@ -58,11 +58,11 @@ impl Structure
 
   // ===============================================================================================
 
-  /// Ссылка по номеру линии: `a[0]` - это `lines[0]` структуры `a`.
+  /// Ссылка по номеру линии: `a[0]` — это `lines[0]` структуры `a`.
   ///
   /// Номер относится только к `currentStructureLink`: без него ссылка пустая.
   ///
-  /// Дальше по ссылке может идти продолжение (`a[0].b`) - тогда первый токен
+  /// Дальше по ссылке может идти продолжение (`a[0].b`) — тогда первый токен
   /// линии становится именем структуры, в которой ищем продолжение.
   fn linkByLineNumber(
     &self,
@@ -76,7 +76,7 @@ impl Structure
 
     let currentStructureLock: Arc<RwLock<Self>> =
       match currentStructureLink
-      { // Номер линии без структуры - читать нечего.
+      { // Номер линии без структуры — читать нечего.
         Some(currentStructureLock) => currentStructureLock,
         None => return Token::newEmpty(TokenType::None)
       };
@@ -106,7 +106,7 @@ impl Structure
     }
 
     if !link.is_empty()
-    { // Продолжение ссылки: `a[0].b` - первый токен линии становится именем.
+    { // Продолжение ссылки: `a[0].b` — первый токен линии становится именем.
       let name: String = lineTokens[0].getData().toString().unwrap_or_default();
       link.insert(0, name.clone());
 
@@ -125,7 +125,7 @@ impl Structure
 
     if parameters.is_some()
     { // Вызов метода: `a[0]()`.
-      // Внимание: аргументы вызова здесь не прокидываются - как и раньше.
+      // Внимание: аргументы вызова здесь не прокидываются — как и раньше.
       let mut expressionTokens: Vec<Token> = Self::callTokens(lineTokens[0].getData(), None);
       drop(currentStructure);
       return currentStructureLock.read().unwrap().expression(&mut expressionTokens);
@@ -156,7 +156,7 @@ impl Structure
       };
 
       if let Some(mut childTokens) = childTokens
-      { // Вложение есть - считаем его значение.
+      { // Вложение есть — считаем его значение.
         drop(currentStructure);
         self.expression(&mut childTokens)
       } else
@@ -175,9 +175,9 @@ impl Structure
 
   // ===============================================================================================
 
-  /// Ссылка по имени: `a.b.c` - путь по структурам.
+  /// Ссылка по имени: `a.b.c` — путь по структурам.
   ///
-  /// Голова ссылки ищется вверх по области видимости, остаток пути - строго вниз.
+  /// Голова ссылки ищется вверх по области видимости, остаток пути — строго вниз.
   fn linkByName(
     &self,
     currentStructureLink: Option< Arc<RwLock<Self>> >, // Структура предыдущего уровня ссылки.
@@ -191,7 +191,7 @@ impl Structure
       {
         let currentStructure: RwLockReadGuard<Self> = currentStructureLink.read().unwrap();
 
-        // Если в текущем пространстве есть такая структура и у неё есть линии - берём именно её;
+        // Если в текущем пространстве есть такая структура и у неё есть линии — берём именно её;
         // Иначе поднимаемся выше (из структуры с условием `? { }` видна структура выше).
         let hasLines: bool =
           if let Some(childStructureLink) = currentStructure.getStructureByScope(&link[0]) {
@@ -214,7 +214,7 @@ impl Structure
 
     let structureLink: Arc<RwLock<Self>> =
       if let Some(structureLink) = structureLink
-      { // Не нашли структуру - пусто.
+      { // Не нашли структуру — пусто.
         structureLink
       } else {
         return Token::newEmpty(TokenType::None)
@@ -222,27 +222,28 @@ impl Structure
 
     if !link.is_empty()
     {
-      // Остался ещё путь: если это динамическая библиотека - собираем токен для FFI.
+      // Остался ещё путь: если это динамическая библиотека — собираем токен для FFI.
       if let Some(libraryToken) = Self::nativeCallToken(&structureLink, &link[0]) {
         return libraryToken;
       }
-      // Иначе - продолжаем чтение ссылки в найденной структуре.
+      // Иначе — продолжаем чтение ссылки в найденной структуре.
       return self.linkExpression(Some(structureLink), link, parameters);
     }
 
-    // Ссылка закончилась - работаем с найденной структурой.
+    // Ссылка закончилась — работаем с найденной структурой.
     let structure: RwLockReadGuard<Self> = structureLink.read().unwrap();
     let lines: &Vec< Arc<RwLock<Line>> > =
       if let Some(lines) = &structure.lines
-      { // У структуры нет линий - читать нечего.
+      { // У структуры нет линий — читать нечего.
         lines
       } else {
         return Token::newEmpty(TokenType::None)
       };
 
     if let Some(parameters) = parameters
-    { // Это вызов метода (скобки были) - запускаем его, для тела любой длины.
-      // Метод вызывается в той области, где он объявлен, - это родитель структуры.
+    { // Это вызов метода (скобки были) — запускаем его, для тела любой длины.
+      //
+      // Метод вызывается в той области, где он объявлен — это родитель структуры.
       let structureParent: Option< Arc<RwLock<Self>> > = structure.parent.clone();
       let mut expressionTokens: Vec<Token> = Self::callTokens(
         Bytes::from(structure.name.clone().unwrap_or_default()),
@@ -292,7 +293,7 @@ impl Structure
 
   /// Токены вызова метода: `имя( аргументы )`.
   ///
-  /// `arguments` = `None` - вызов без аргументов (пустое вложение).
+  /// `arguments` = `None` — вызов без аргументов (пустое вложение).
   fn callTokens(name: Bytes, arguments: Option< Vec<Token> >) -> Vec<Token>
   {
     let mut parametersToken: Token =
@@ -327,26 +328,28 @@ impl Structure
 
   // ===============================================================================================
 
-  /// Токен вызова динамической библиотеки: `lib.method` - путь к библиотеке и имя метода.
+  /// Токен вызова динамической библиотеки: `lib.method` — путь к библиотеке и имя метода.
   ///
-  /// `None` - структура не библиотека, идём дальше по обычному пути.
-  /// `Some` - токен готов (пустой, если библиотека не читается).
+  /// - `None`: Структура не библиотека, идём дальше по обычному пути;
+  /// 
+  /// - `Some`: Токен готов (пустой, если библиотека не читается).
+  /// 
   fn nativeCallToken(structureLink: &Arc<RwLock<Self>>, methodName: &str) -> Option<Token>
   {
     let structureGuard: RwLockReadGuard<Self> = structureLink.read().unwrap();
 
-    // Если структура имеет тип Pointer - это динамическая библиотека.
+    // Если структура имеет тип `Pointer` — это динамическая библиотека.
     if structureGuard.dataType != StructureType::Primitive(PrimitiveType::Pointer) {
       return None;
     }
 
-    // Далее извлекаем указатель на библиотеку, сохранённый в lines[0].tokens[0].
-    // Библиотека там лежит как токен типа String с путём к файлу библиотеки.
+    // Далее извлекаем указатель на библиотеку, сохранённый в `lines[0].tokens[0]`.
+    // Библиотека там лежит как токен типа `String` с путём к файлу библиотеки.
     //
     // Из токена извлекаем сырые байты (путь к библиотеке).
     let bytes: Bytes =
     {
-      // Получаем вектор линий структуры (в нашем случае lines[0] хранит токен).
+      // Получаем вектор линий структуры (в нашем случае `lines[0]` хранит токен).
       let linesVec: &Vec< Arc<RwLock<Line>> > = match &structureGuard.lines {
         Some(v) => v,
         None => return Some(Token::newEmpty(TokenType::None))
@@ -358,7 +361,7 @@ impl Structure
       };
       // Читаем линию, чтобы получить её токены.
       let line: RwLockReadGuard<Line> = lineLock.read().unwrap();
-      // Токены линии — здесь должен быть один токен типа String.
+      // Токены линии — здесь должен быть один токен типа `String`.
       let tokensVec: &[Token] = match &line.tokens {
         Some(t) => t,
         None => return Some(Token::newEmpty(TokenType::None))
@@ -368,7 +371,7 @@ impl Structure
         Some(t) => t,
         None => return Some(Token::newEmpty(TokenType::None))
       };
-      // Убеждаемся, что токен действительно типа String.
+      // Убеждаемся, что токен действительно типа `String`.
       if *nativeToken.getDataType() != TokenType::String {
         return Some(Token::newEmpty(TokenType::None));
       }
@@ -392,9 +395,9 @@ impl Structure
     Some(Token::newNesting(vec![
       Arc::new(RwLock::new(Line {
         tokens: Some(vec![
-          // Путь к lib, например: "./libprint.so".
+          // Путь к `library`, например: `./libprint.so`.
           Token::new(TokenType::String, libraryPath),
-          // Имя метода, который вызывают; например: "method" в lib.method(...).
+          // Имя метода, который вызывают; например: `method` в `lib.method(...)`.
           Token::new(TokenType::String, methodName.to_string()) // todo Но кстати оно больше не надо будет? зачем тогда .clone.
         ]),
         lines: None

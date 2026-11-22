@@ -5,7 +5,7 @@ use crate::parser::testing::{checkStructure, primitiveValueNumber, primitiveValu
 
 // Тесты на `None` в качестве типизации.
 //
-// `None` - не явный примитив: он может появиться у любой структуры сам из-за
+// `None` — не явный примитив: он может появиться у любой структуры сам из-за
 // константного и неопределённое поведение.
 //
 // 
@@ -23,9 +23,9 @@ use crate::parser::testing::{checkStructure, primitiveValueNumber, primitiveValu
 // - `a: U8 | None` - То же самое, что просто `a: U8`.
 
 // =================================================================================================
-// Одиночный `None` в типе - это отсутствие типа.
+// Одиночный `None` в типе — это отсутствие типа.
 
-/// `a: None := 5` - то же, что `a := 5`: тип выводится из значения.
+/// `a: None := 5` — то же, что `a := 5`: тип выводится из значения.
 #[test]
 fn noType() -> ()
 {
@@ -75,7 +75,7 @@ fn noType() -> ()
   );
 }
 
-/// `a: None = 5` - то же, что `a = 5`: `=` структуру не создаёт.
+/// `a: None = 5` — то же, что `a = 5`: `=` структуру не создаёт.
 #[test]
 #[should_panic(expected = "Structure 'a' was not created")]
 fn equalsSkipped() -> ()
@@ -97,7 +97,7 @@ fn variableEqualsSkipped() -> ()
   );
 }
 
-/// `a: None` - то же, что `a`: структура ждёт первого значения и становится `Constant`.
+/// `a: None` — то же, что `a`: структура ждёт первого значения и становится `Constant`.
 #[test]
 fn forward() -> ()
 {
@@ -127,7 +127,7 @@ fn forward() -> ()
   );
 }
 
-/// Несколько `None` подряд - тоже отсутствие типа.
+/// Несколько `None` подряд — тоже отсутствие типа.
 #[test]
 fn onlyNones() -> ()
 {
@@ -217,7 +217,7 @@ fn singleLeft() -> ()
   );
 }
 
-/// `True | False | None` - это `True | False`.
+/// `True | False | None` — это `True | False`.
 #[test]
 fn droppedFromLogic() -> ()
 {

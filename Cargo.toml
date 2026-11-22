@@ -25,7 +25,7 @@ serde = { version = "1.0.228", features = ["derive"], optional = true }
 
 # todo smmalloc = { version = "7.6.4", optional = true }
 #  Но по тестам он самый лучший от остальных вел себя, 
-#  но все равно это надо подумать будет потом - сейчас мало смысла.
+#  но все равно это надо подумать будет потом — сейчас мало смысла.
 
 chillffi = { version = "0.5.0", optional = true }
 # todo desc

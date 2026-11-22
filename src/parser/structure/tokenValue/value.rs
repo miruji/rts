@@ -10,8 +10,8 @@ use std::fmt;
 //
 // - `Value` - это математика абстрактных данных, т.е. самих токенов.
 //
-// Это все потому, что `Token` не может знать что есть какой тип - это дело структур;
-// Поэтому тут не должно быть ABI типов - это разные вещи.
+// Это все потому, что `Token` не может знать что есть какой тип — это дело структур;
+// Поэтому тут не должно быть ABI типов — это разные вещи.
 
 // =================================================================================================
 
@@ -60,7 +60,7 @@ impl Value
       Self::UInt(v) => *v==0,
       Self::Float(v) => *v==0.0,
       Self::UFloat(v) => *v==uf64::from(0.0),
-      _ => false // `None`, `Char`, `String` - не числа.
+      _ => false // `None`, `Char`, `String` — не числа.
     }
   }
 
@@ -78,7 +78,7 @@ impl Value
   }
 }
 
-/// `u64` в `i64` без переполнения: всё что больше - граница `i64`;
+/// `u64` в `i64` без переполнения: всё что больше — граница `i64`;
 /// 
 /// Обычное `as i64` тут ломает знак: `u64::MAX` превращается в `-1`.
 fn toI64(value: u64) -> i64
@@ -114,7 +114,7 @@ impl std::ops::Add for Value
   {
     match (self.clone(), other)
     {
-      // None;
+      // `None`;
       // `None` + `None` обрабатывается в `_`.
       (Self::None, Self::Int(y))    => Self::Int(y),
       (Self::None, Self::UInt(y))   => Self::UInt(y),
@@ -192,7 +192,7 @@ impl std::ops::Sub for Value
   {
     match (self.clone(), other)
     {
-      // None;
+      // `None`;
       // `None` + `None` обрабатывается в `_`.
       (Self::None, Self::Int(y))    => Self::Int(y),
       (Self::None, Self::UInt(y))   => Self::UInt(y),
@@ -265,7 +265,7 @@ impl std::ops::Mul for Value
   {
     match (self.clone(), other)
     {
-      // None;
+      // `None`;
       // `None` + `None` обрабатывается в `_`.
       (Self::None, Self::Int(y))    => Self::Int(y),
       (Self::None, Self::UInt(y))   => Self::UInt(y),
@@ -318,7 +318,7 @@ impl std::ops::Div for Value
     //
     // 2. Рассмотрим задачу распределения `10` яблок между 0 людьми.
     // Технически результатом будет `10`, поскольку яблоки так и не были распределены.
-    // Это означает, что либо кто-то получает все яблоки, либо одна сущность хранит
+    // Это означает, либо кто-то получает все яблоки, либо одна сущность хранит
     // всё их количество на складе.
     // 
     // 3. Более простой пример: если разделить один пирог между 0 людьми,
@@ -335,7 +335,7 @@ impl std::ops::Div for Value
     {
       match self
       {
-        Self::None => return self, // Левой части нет - остается None.
+        Self::None => return self, // Левой части нет — остается `None`.
         _ => other.one()
       }
     } else {
@@ -345,7 +345,7 @@ impl std::ops::Div for Value
     //
     match (self.clone(), other)
     {
-      // None;
+      // `None`;
       // `None` + `None` обрабатывается в `_`.
       (Self::None, Self::Int(y))    => Self::Int(y),
       (Self::None, Self::UInt(y))   => Self::UInt(y),

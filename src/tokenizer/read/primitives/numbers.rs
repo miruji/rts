@@ -4,7 +4,7 @@ use crate::tokenizer::types::token::Token;
 use crate::tokenizer::types::tokenType::TokenType;
 // =================================================================================================
 
-/// Проверяет что байт является цифрой.
+/// Проверяет, что байт является цифрой.
 pub const fn isDigit(byte: u8) -> bool
 {
   byte >= b'0' && byte <= b'9'
@@ -37,22 +37,28 @@ pub fn isFloatDotStart(buffer: &[u8], index: usize, bufferLength: usize) -> bool
   }
 
   let next: u8 = buffer[temp];
-  // Буква/`_` ⟶ member access (`a.b`), иначе числовой ноль.
+  // Буква / `_` ⟶ member access (`a.b`), иначе числовой ноль.
   !(next == b'_' || isLetter(next))
 }
 
 // =================================================================================================
 
-/// Проверяет `buffer` по `index` и так находит возможные примитивные числовые типы данных:
-/// - `UInt`;
-/// - `Int`;
-/// - `UFloat`;
-/// - `Float`.
+/// Проходит `buffer` по `index` и так находит `Token` числа:
+/// 
+/// - `UInt`: беззнаковое число;
+/// 
+/// - `Int`: знаковое число;
+/// 
+/// - `UFloat`: беззнаковое дробное число;
+/// 
+/// - `Float`: знаковое дробное число.
 ///
 /// Здесь нет `Complex` и `Rational` так как это платформо-зависимые вещи и должны быть
 /// реализованы отдельно.
 //
 // todo Однако синтаксис `Complex` и `Rational` можно рассматривать в будущем.
+///
+/// Число здесь набор цифр, а также определённых знаков для отрицательного и дробного числа.
 pub fn getNumber(buffer: &[u8], index: &mut usize, bufferLength: usize) -> Option<Token>
 {
   let mut savedIndex: usize = *index; // Index buffer.
@@ -90,12 +96,12 @@ pub fn getNumber(buffer: &[u8], index: &mut usize, bufferLength: usize) -> Optio
 
     if !negative && buffer[*index] == b'-'
     { // `Int`/`Float`
-      // Логика тут простая - токенайзер должен вложить минус в число, потому что он рядом.
-      // Любое алгебраическое выражение будь то `10-20` - всегда `-20` общая сущность.
-      // Поэтому и раскрывается потом как: `10+(-20)`. Поэтому если минус перед числом -
+      // Логика тут простая — токенайзер должен вложить минус в число, потому что он рядом.
+      // Любое алгебраическое выражение будь то `10-20` — всегда `-20` общая сущность.
+      // Поэтому и раскрывается потом как: `10+(-20)`. Поэтому если минус перед числом —
       // он обязательно должен быть втянут в него. Поэтому для чисел он всегда унарный;
       // Для выражений: `a-b` он будет уже бинарный т.к. там логика парсера идет.
-      // Т.е. - бинарный минус это когда ты не можешь применить его без парсера.
+      // Т.е. — бинарный минус это когда ты не можешь применить его без парсера.
       result.push(currentByte as char);
       negative = true;
       savedIndex += 1;
@@ -112,13 +118,13 @@ pub fn getNumber(buffer: &[u8], index: &mut usize, bufferLength: usize) -> Optio
       }
     } else
     if isDigit(currentByte)
-    { // UInt
+    { // `UInt`.
       result.push(currentByte as char);
       hasDigit = true;
       savedIndex += 1;
     } else
     if currentByte == b'.' && !hasDot
-    { // UFloat
+    { // `UFloat`.
 
       // Нужно, чтобы читать: `12 34 . 20` и `0.\n10` ⟶ `0.10`.
       let mut temp: usize = savedIndex + 1;
@@ -139,7 +145,7 @@ pub fn getNumber(buffer: &[u8], index: &mut usize, bufferLength: usize) -> Optio
       }
     } else
     if !hasExponential && (currentByte == b'e' || currentByte == b'E')
-    { // Это должно быть float, без повторений E.
+    { // Это должно быть `float`, без повторений `E`.
       if !hasDigit && !hasDot {
         break;
       }
@@ -148,7 +154,7 @@ pub fn getNumber(buffer: &[u8], index: &mut usize, bufferLength: usize) -> Optio
       hasExponential = true;
       result.push(currentByte as char);
       savedIndex += 1;
-      hasDot = true; // Если будет integer - то станет от этого float.
+      hasDot = true; // Если будет `integer` — то станет от этого `float`.
 
       // Нужно, чтобы читать: `12 34 e + 2`.
       let mut temp: usize = savedIndex;
@@ -179,10 +185,15 @@ pub fn getNumber(buffer: &[u8], index: &mut usize, bufferLength: usize) -> Optio
   // Каноническая запись через `{:?}`.
   // 
   // Например, для `f64`:
+  //
   // - `0.0` ⟶ `0.0`;
+  //
   // - `3.` ⟶ `3.0`;
+  //
   // - `.5` ⟶ `0.5`;
+  //
   // - `1e3` ⟶ `1000.0`;
+  //
   // - `1e20` ⟶ `1e20`.
   //
   // Точка всегда сохраняется для целых `float`,
@@ -201,10 +212,10 @@ pub fn getNumber(buffer: &[u8], index: &mut usize, bufferLength: usize) -> Optio
 
   *index = savedIndex;
 
-  // next return.
+  // Next return.
   Some(
     match (hasDot, negative)
-    { // dot, negative
+    { // `dot`, `negative`.
       (true, true)  => Token::new( TokenType::Float,  result ),
       (true, false) => Token::new( TokenType::UFloat, result ),
       (false, true) => Token::new( TokenType::Int,    result ),

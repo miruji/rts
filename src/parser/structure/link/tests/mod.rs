@@ -20,8 +20,12 @@ use std::sync::{Arc, RwLock, RwLockReadGuard};
 
 /// Выполняет код и читает из корня ссылку `link`.
 ///
-/// `link` - путь ссылки: `"a.b"` ⟶ `["a", "b"]`.
-/// `parameters` - `None` - это чтение значения, `Some` - это вызов метода.
+/// **Параметры:**
+/// 
+/// - `link`: Путь ссылки: `"a.b"` ⟶ `["a", "b"]`;
+/// 
+/// - `parameters`: `None` - это чтение значения, `Some` - это вызов метода.
+/// 
 pub(super) fn linkOf(code: &str, link: &str, parameters: Option< Vec<Token> >) -> Token
 {
   let main: Arc<RwLock<Structure>> = runCode!(code);
@@ -49,7 +53,7 @@ pub(super) fn linkOfIn(code: &str, name: &str, link: &str, parameters: Option< V
 
 /// Выполняет код и читает линию `line` структуры `name`.
 ///
-/// Числовая ссылка - это номер линии в конкретной структуре,
+/// Числовая ссылка — это номер линии в конкретной структуре,
 /// поэтому структура-источник тут обязательна.
 pub(super) fn linkOfLine(code: &str, name: &str, line: usize, parameters: Option< Vec<Token> >) -> Token
 {
@@ -66,7 +70,7 @@ pub(super) fn linkOfLine(code: &str, name: &str, line: usize, parameters: Option
 
 /// Выполняет код и читает линию `line` корневой структуры.
 ///
-/// Корневая структура - это `main`: в ней лежат и примитивы, и структуры файла.
+/// Корневая структура — это `main`: в ней лежат и примитивы, и структуры файла.
 pub(super) fn linkOfRootLine(code: &str, line: usize, parameters: Option< Vec<Token> >) -> Token
 {
   let main: Arc<RwLock<Structure>> = runCode!(code);
@@ -102,7 +106,7 @@ pub(super) fn checkEmpty(result: &Token) -> ()
 
 /// Структура-указатель на динамическую библиотеку: путь лежит в первой линии.
 ///
-/// `importNative` в тестах не работает - ему нужен запущенный файл,
+/// `importNative` в тестах не работает — ему нужен запущенный файл,
 /// поэтому такую структуру собираем руками.
 pub(super) fn pointerStructure(name: &str, path: &str, parent: &Arc<RwLock<Structure>>) -> Arc<RwLock<Structure>>
 {
@@ -118,7 +122,7 @@ pub(super) fn pointerStructure(name: &str, path: &str, parent: &Arc<RwLock<Struc
   )))
 }
 
-/// Линия из токенов - для ручной сборки структур.
+/// Линия из токенов — для ручной сборки структур.
 pub(super) fn lineOf(tokens: Vec<Token>) -> Arc<RwLock<Line>>
 {
   Arc::new(RwLock::new(Line
@@ -151,7 +155,7 @@ pub(super) fn childStructure(
   structure
 }
 
-/// Корневая структура - без родителя и без линий.
+/// Корневая структура — без родителя и без линий.
 pub(super) fn emptyMain() -> Arc<RwLock<Structure>>
 {
   Arc::new(RwLock::new(Structure::new(

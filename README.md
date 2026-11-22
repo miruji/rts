@@ -14,7 +14,7 @@
 
 - **Seamless Integration:** Easy to install and integrate into existing workflows.
 
-- **Dynamic Scripting:** No need to rebuild your program multiple times - run scripts in real time!
+- **Dynamic Scripting:** No need to rebuild your program multiple times — run scripts in real time!
 
 - **Free Data Structures:** Create data structures tailored to your needs with full customization of their behavior.
 

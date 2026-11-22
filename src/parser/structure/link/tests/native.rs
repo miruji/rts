@@ -24,7 +24,7 @@ fn nativeCallToken() -> ()
   let mut segments: Vec<String> = Structure::parseLink("lib.hello");
   let result: Token = main.read().unwrap().linkExpression(None, &mut segments, None);
 
-  // Токен-вложение: одна линия с двумя строками - путь и имя метода.
+  // Токен-вложение: одна линия с двумя строками — путь и имя метода.
   let lines: Vec< Arc<RwLock<Line>> > = result.lines.clone().unwrap_or_default();
   assert!(lines.len() == 1, "expected one nesting line, got {}", lines.len());
   let tokens: Vec<Token> = lines[0].read().unwrap().tokens.clone().unwrap_or_default();
@@ -33,7 +33,7 @@ fn nativeCallToken() -> ()
   checkToken(&tokens[1], &TokenType::String, "hello");
 }
 
-/// Битая библиотека: в первой линии не строка с путём - ссылка пустая.
+/// Битая библиотека: в первой линии не строка с путём — ссылка пустая.
 #[test]
 fn nativeCallWithoutLibraryPath() -> ()
 {

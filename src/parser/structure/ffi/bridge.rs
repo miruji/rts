@@ -11,21 +11,21 @@ use crate::tokenizer::types::token::Token;
 use crate::tokenizer::types::tokenType::TokenType;
 // =================================================================================================
 
-/// Мост Token ⟶ ABI StructureType::Primitive(PrimitiveType::String).
+/// Мост `Token` ⟶ ABI `StructureType::Primitive(PrimitiveType::String)`.
 ///
 /// StructureType не-custom типы — хардкод примитивов,
 /// т.к. ABI `chillffi` сильно ограничен. String — единственный ABI-примитив,
-/// у которого есть заранее подготовленные поля (.pointer .length), поэтому
+/// у которого есть заранее подготовленные поля (`.pointer` `.length`), поэтому
 /// только для него нужен явный мост из токена в 2 поля.
 /// 
-/// CString - алиас от Pointer только для FFI (см. abiType) - и RawString — обычные
-/// скаляры, моста не требуют: данные и длина/NUL берутся прямо из токена
-/// в момент FFI-вызова (tokenToFfiArg).
+/// `CString` — алиас от `Pointer` только для FFI (см. `abiType`) — и `RawString` —
+/// обычные скаляры, моста не требуют: данные и длина/`NUL` берутся прямо из токена
+/// в момент FFI-вызова (`tokenToFfiArg`).
 ///
 /// Работает аддитивно: не трогает `.lines` структуры (там остаётся исходный
 /// токен, поэтому голое имя `str` в `lib.print(str)` по-прежнему резолвится
-/// в TokenType::String через обычный linkExpression() и идет в
-/// FfiArgValue::String ниже — `chillffi` сам разложит его на pointer+len).
+/// в `TokenType::String` через обычный `linkExpression()` и идет в
+/// `FfiArgValue::String` ниже — `chillffi` сам разложит его на `pointer`+`len`).
 /// Вызывать после того, как `.lines` структуры уже выставлены.
 //
 // todo rewrite desc
@@ -70,7 +70,7 @@ pub fn stringFields(token: &Token) -> Option<[Arc<RwLock<Structure>>; 2]>
 
 /// Конкретный типизированный аргумент FFI, который можно положить в `CallBuilder::arg::<T>`.
 ///
-/// `chillffi` жёстко разделяет `Value` (приватный enum) и публичный
+/// `chillffi` жёстко разделяет `Value` (приватный `enum`) и публичный
 /// `CallBuilder::arg::<T: FfiArg>(...)` — `Value` снаружи не сконструируешь,
 /// поэтому единственный путь — превратить динамический `Token` в один
 /// из известных типов и завернуть через typed builder.
@@ -90,7 +90,7 @@ enum FfiArgValue
   RawString(Vec<u8>)
 }
 
-/// Token ⟶ FfiArgValue, с приведением размера к наименьшему подходящему типу.
+/// `Token` ⟶ `FfiArgValue`, с приведением размера к наименьшему подходящему типу.
 fn tokenToFfiArg(token: &Token) -> Result<FfiArgValue, String>
 {
   let tokenDataType: &TokenType = token.getDataType();
@@ -100,7 +100,7 @@ fn tokenToFfiArg(token: &Token) -> Result<FfiArgValue, String>
   match tokenDataType
   {
     TokenType::UInt =>
-    { // Токен бесконечен, а u64 нет: всё что больше - граница u64 (#71)
+    { // Токен бесконечен, а `u64` нет: всё что больше — граница `u64` (#71).
       let v: u64 = match tokenData.parse::<u64>() 
       {
         Ok(v) => v,
@@ -113,7 +113,7 @@ fn tokenToFfiArg(token: &Token) -> Result<FfiArgValue, String>
       else                         { Ok(FfiArgValue::U64(v)) }
     }
     TokenType::Int =>
-    { // Токен бесконечен, а i64 нет: всё что больше или меньше - граница i64 (#71)
+    { // Токен бесконечен, а `i64` нет: всё что больше или меньше — граница `i64` (#71).
       let v: i64 = match tokenData.parse::<i64>() 
       {
         Ok(v) => v,
@@ -189,13 +189,13 @@ pub enum FfiExpect
 
 // =================================================================================================
 
-/// Беззнаковое целое ⟶ абстрактный токен UInt;
+/// Беззнаковое целое ⟶ абстрактный токен `UInt`;
 fn unsignedToken(value: u64) -> Token
 {
   Token::new(TokenType::UInt, value.to_string())
 }
 
-/// Знаковое целое ⟶ абстрактный токен (как у примитивов: `>= 0` это UInt, `< 0` это Int).
+/// Знаковое целое ⟶ абстрактный токен (как у примитивов: `>= 0` это `UInt`, `< 0` это `Int`).
 fn signedToken(value: i64) -> Token
 {
   if value < 0 {
@@ -205,8 +205,8 @@ fn signedToken(value: i64) -> Token
   }
 }
 
-/// Число с плавающей точкой ⟶ абстрактный токен (`>= 0` это UFloat, `< 0` это Float).
-/// `text` — уже отформатированное значение (для F32 оно отличается от F64).
+/// Число с плавающей точкой ⟶ абстрактный токен (`>= 0` это UFloat, `< 0` это `Float`).
+/// `text` — уже отформатированное значение (для `F32` оно отличается от `F64`).
 fn floatToken(text: String, negative: bool) -> Token
 {
   let mut text: String = text;
@@ -232,7 +232,7 @@ fn callWithResult<'a, 'g>(builder: CallBuilder<'a, 'g>, expect: &FfiExpect) -> R
   // Тип слева не указан или "любой" — ABI-вызов идёт как `usize` (внутренний регистр-read,
   // не итоговый `stype()` — тот выводится из значения ниже).
   //
-  // Тип ожидания приводится к ABI-форме: `CString` - это алиас от `Pointer`,
+  // Тип ожидания приводится к ABI-форме: `CString` — это алиас от `Pointer`,
   // поэтому адрес читается так же, как у `Pointer`.
   let expectType: StructureType = match expect
   {
@@ -416,7 +416,7 @@ mod tests
     assert!(matches!(arg(TokenType::Int, "-9223372036854775809"), Ok(FfiArgValue::I64(v)) if v == i64::MIN));
     assert!(matches!(arg(TokenType::Int, &negBig), Ok(FfiArgValue::I64(v)) if v == i64::MIN));
     
-    // Не число - ошибка, как и раньше
+    // Не число — ошибка, как и раньше
     assert!(arg(TokenType::UInt, "abc").is_err());
   }
 
@@ -490,7 +490,7 @@ mod tests
     assert!(dataOf(&wide) == (TokenType::UInt, String::from("7")));
   }
 
-  /// Числа с плавающей точкой: `>= 0` это UFloat, `< 0` это Float, точка сохраняется.
+  /// Числа с плавающей точкой: `>= 0` это `UFloat`, `< 0` это `Float`, точка сохраняется.
   #[test]
   fn typedFloat() -> ()
   {

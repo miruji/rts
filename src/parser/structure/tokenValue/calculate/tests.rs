@@ -2,7 +2,7 @@ use crate::tokenizer::types::token::Token;
 use crate::tokenizer::types::tokenType::TokenType;
 // =================================================================================================
 
-// Это тесты calculate. Они работают через вычисление, а не через токены.
+// Это тесты `calculate`. Они работают через вычисление, а не через токены.
 //
 // Это дает тестирование на самом низком уровне в обход токенайзера и парсера.
 // Т.е. тестирует саму реализацию операций математики и логики.
@@ -34,7 +34,7 @@ fn check(
 
 // =================================================================================================
 
-/// Сравнения возвращают True/False, а не число (#39, #65).
+/// Сравнения возвращают `True`/`False`, а не число (#39, #65).
 #[test]
 fn comparison() -> ()
 {
@@ -63,14 +63,14 @@ fn comparisonNone() -> ()
   check(TokenType::Equals,    (TokenType::UInt, "5"), (TokenType::None, ""), f, "False");
   check(TokenType::NotEquals, (TokenType::UInt, "5"), (TokenType::None, ""), t, "True");
   
-  // 0 - это не пустота.
+  // 0 — это не пустота.
   check(TokenType::Equals,    (TokenType::UInt, "0"), (TokenType::None, ""), f, "False");
 }
 
 // =================================================================================================
 
-/// Умножение смешанных типов: `*` в выражениях пока отключён (structure.rs, expressionWith),
-/// поэтому Value::Mul проверяется здесь напрямую, до его включения.
+/// Умножение смешанных типов: `*` в выражениях пока отключён (`structure.rs`, `expressionWith`),
+/// поэтому `Value::Mul` проверяется здесь напрямую, до его включения.
 #[test]
 fn multiplyMixed() -> ()
 {
@@ -84,7 +84,7 @@ fn multiplyMixed() -> ()
   check(TokenType::Multiply, (TokenType::UInt,  "3"),  (TokenType::Float,  "-2.5"), TokenType::Float,  "-7.5");
 }
 
-/// Умножение коммутативно: a * b == b * a для любой пары числовых типов.
+/// Умножение коммутативно: `a * b == b * a` для любой пары числовых типов.
 #[test]
 fn multiplyCommutative() -> ()
 {
@@ -115,7 +115,7 @@ fn multiplyCommutative() -> ()
 
 // =================================================================================================
 
-/// Результат за границей f64 зажимается, а не становится inf/NaN (#71).
+/// Результат за границей `f64` зажимается, а не становится `inf`/`NaN` (#71).
 #[test]
 fn floatOverflow() -> ()
 {
@@ -126,9 +126,9 @@ fn floatOverflow() -> ()
   check(TokenType::Plus,  (TokenType::UFloat, "1e308"),  (TokenType::UFloat, "1e308"), TokenType::UFloat, &max);
   check(TokenType::Minus, (TokenType::Float,  "-1e308"), (TokenType::UFloat, "1e308"), TokenType::Float,  &min);
   
-  // Примитив за границей зажимается до операции: MAX - MAX = 0, а не inf - inf.
+  // Примитив за границей зажимается до операции: `MAX - MAX = 0`, а не `inf - inf`.
   check(TokenType::Minus, (TokenType::UFloat, "1e309"),  (TokenType::UFloat, "1e309"),  TokenType::UFloat, "0.0");
-  // todo Это бред, inf нет в RTS, если оно есть где-то в обработке - это нужно удалить.
+  // todo Это бред, inf нет в RTS, если оно есть где-то в обработке — это нужно удалить.
   check(TokenType::Minus, (TokenType::UFloat, "inf"),    (TokenType::UFloat, "inf"),    TokenType::UFloat, "0.0");
   check(TokenType::Minus, (TokenType::Float,  "-1e309"), (TokenType::Float,  "-1e309"), TokenType::Float,  "0.0");
   

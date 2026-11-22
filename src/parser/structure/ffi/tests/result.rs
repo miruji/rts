@@ -277,7 +277,7 @@ fn assignmentToExistingStructure() -> ()
 
 /// Вызов-оператор: результат не нужен.
 ///
-/// `marker` в конце - чтобы было видно, что файл дочитан до конца.
+/// `marker` в конце — чтобы было видно, что файл дочитан до конца.
 #[test]
 fn callAsStatement() -> ()
 {
@@ -377,7 +377,7 @@ fn resultAsFunctionReturn() -> ()
 //
 // todo `float` токен всегда уходит как `F64`.
 #[test]
-#[ignore = "todo: F32-аргументы - float-токен всегда уходит как F64"]
+#[ignore = "todo: F32-аргументы — float-токен всегда уходит как F64"]
 fn f32Arguments() -> ()
 {
   let path: String = writeCodeFile!(
@@ -400,7 +400,7 @@ fn f32Arguments() -> ()
 //
 // todo issue #65.
 #[test]
-#[ignore = "todo: True/False в результате (issue #65) - у нас None"]
+#[ignore = "todo: True/False в результате (issue #65) — у нас None"]
 fn booleanResult() -> ()
 {
   let path: String = writeCodeFile!(

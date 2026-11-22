@@ -2,7 +2,14 @@ use crate::tokenizer::types::token::{Token};
 use crate::tokenizer::types::tokenType::TokenType;
 // =================================================================================================
 
-/// Проверяет buffer по index и так находит возможные: Char, String, RawString.
+/// Читает `buffer` по `index` и так находит `Token`:
+/// 
+/// - `Char`;
+///
+/// - `String`;
+/// 
+/// - `RawString`.
+/// 
 pub fn getQuotes(buffer: &[u8], index: &mut usize, formatted: bool) -> Token 
 {
   let byte1: u8 = buffer[*index]; // Начальный символ кавычки.
@@ -23,7 +30,7 @@ pub fn getQuotes(buffer: &[u8], index: &mut usize, formatted: bool) -> Token
     {
       // Возврат строки не возможен, поскольку она может выйти за скобки и т.п. 
       // если он достиг конца строки уже;
-      // todo Комментарии же читают далее - значит возможно;
+      // todo Комментарии же читают далее — значит возможно;
       //  Должно читать до закрывающего quote.
       b'\n' => { return Token::newEmpty(TokenType::None); }
       // Если мы нашли символ похожий на первый, значит закрываем,
@@ -63,7 +70,7 @@ pub fn getQuotes(buffer: &[u8], index: &mut usize, formatted: bool) -> Token
     b'\'' => 
     { 
       if formatted || result.len() == 1 
-      { // Одинарные кавычки должны содержать только один символ - если не formatted.
+      { // Одинарные кавычки должны содержать только один символ — если не `formatted`.
         Token::new(
           if formatted { TokenType::FormattedChar } else { TokenType::Char },
           result
@@ -105,7 +112,7 @@ mod tests
       ("\"esc'\"", TokenType::String, "esc'", false),
       ("\"esc`\"", TokenType::String, "esc`", false),
       ("`esc'`", TokenType::RawString, "esc'", false),
-      // todo Тут проблемы что нельзя отладить \ перед quotes - оно не работает;
+      // todo Тут проблемы что нельзя отладить `\` перед `quotes` — оно не работает;
       //  Хотя в коде обычно это работало. Возможно что тут передать нельзя.
     ] {
       let buffer: &[u8] = input.as_bytes();

@@ -38,7 +38,7 @@ pub(super) fn expressionOf(code: &str) -> Token
   main.expression(&mut tokens)
 }
 
-/// Возвращает структуру по `name` из выполненного кода; если её нет - паника.
+/// Возвращает структуру по `name` из выполненного кода; если её нет — паника.
 ///
 /// `"a"` — по области видимости; `"a.b"` — строго вниз по пути.
 pub(super) fn getStructure(main: &Arc<RwLock<Structure>>, name: &str) -> Arc<RwLock<Structure>>
@@ -70,13 +70,13 @@ fn tokenOf(main: &Arc<RwLock<Structure>>, name: &str) -> (TokenType, String)
 
 // =================================================================================================
 
-/// Числовой примитив как `вариант` типизации: `primitiveValueNumber("10")` - это `a: 10`.
+/// Числовой примитив как `вариант` типизации: `primitiveValueNumber("10")` — это `a: 10`.
 pub(super) fn primitiveValueNumber(data: &str) -> StructureType
 {
   StructureType::PrimitiveValue(PrimitiveValueKind::Number, String::from(data))
 }
 
-/// Строковый примитив как `вариант` типизации: `primitiveValueText("x")` - это `a: "x"`.
+/// Строковый примитив как `вариант` типизации: `primitiveValueText("x")` — это `a: "x"`.
 pub(super) fn primitiveValueText(data: &str) -> StructureType
 {
   StructureType::PrimitiveValue(PrimitiveValueKind::String, String::from(data))
@@ -87,7 +87,7 @@ pub(super) fn primitiveValueText(data: &str) -> StructureType
 // Грани возвращают `Err(текст)`, а не паникуют: `checkStructure!` паникует сам, а `tryCheckStructure!` отдаёт
 // `Result`, поэтому ошибку сверки можно проверить без паники и без вывода в `--nocapture`.
 
-/// `type` - тип токена.
+/// `type` — тип токена.
 pub(super) fn checkType(main: &Arc<RwLock<Structure>>, name: &str, code: &str, expected: &TokenType) -> Result<(), String>
 {
   let (tokenType, _): (TokenType, String) = tokenOf(main, name);
@@ -98,7 +98,7 @@ pub(super) fn checkType(main: &Arc<RwLock<Structure>>, name: &str, code: &str, e
   ))
 }
 
-/// `stype` - тип структуры.
+/// `stype` — тип структуры.
 pub(super) fn checkStype(main: &Arc<RwLock<Structure>>, name: &str, code: &str, expected: &StructureType) -> Result<(), String>
 {
   let structure: Arc<RwLock<Structure>> = getStructure(main, name);
@@ -110,7 +110,7 @@ pub(super) fn checkStype(main: &Arc<RwLock<Structure>>, name: &str, code: &str, 
   ))
 }
 
-/// `utype` - полный объявленный тип: набор вариантов объединения или `stype`, если объединения нет.
+/// `utype` — полный объявленный тип: набор вариантов объединения или `stype`, если объединения нет.
 pub(super) fn checkUtype(main: &Arc<RwLock<Structure>>, name: &str, code: &str, expected: &StructureType) -> Result<(), String>
 {
   let structure: Arc<RwLock<Structure>> = getStructure(main, name);
@@ -123,7 +123,7 @@ pub(super) fn checkUtype(main: &Arc<RwLock<Structure>>, name: &str, code: &str, 
   ))
 }
 
-/// `value` - значение структуры.
+/// `value` — значение структуры.
 pub(super) fn checkValue(main: &Arc<RwLock<Structure>>, name: &str, code: &str, expected: &str) -> Result<(), String>
 {
   let (_, data): (TokenType, String) = tokenOf(main, name);
@@ -134,7 +134,7 @@ pub(super) fn checkValue(main: &Arc<RwLock<Structure>>, name: &str, code: &str, 
   ))
 }
 
-/// `mut` - уровень изменения структуры.
+/// `mut` — уровень изменения структуры.
 pub(super) fn checkMut(main: &Arc<RwLock<Structure>>, name: &str, code: &str, expected: &StructureMut) -> Result<(), String>
 {
   let structure: Arc<RwLock<Structure>> = getStructure(main, name);
@@ -147,7 +147,7 @@ pub(super) fn checkMut(main: &Arc<RwLock<Structure>>, name: &str, code: &str, ex
   ))
 }
 
-/// `lines` - сколько строк внутри структуры.
+/// `lines` — сколько строк внутри структуры.
 pub(super) fn checkLines(main: &Arc<RwLock<Structure>>, name: &str, code: &str, expected: usize) -> Result<(), String>
 {
   let structure: Arc<RwLock<Structure>> = getStructure(main, name);
@@ -166,8 +166,8 @@ pub(super) fn checkLines(main: &Arc<RwLock<Structure>>, name: &str, code: &str, 
 ///
 /// Для отладки кейсов без `assert`: не паникует. У метода и модуля токена нет —
 /// `type`/`value` печатаются как `<none>`. Грани различаются между собой:
-/// `type` - тип токена (`type(a)` в `.rt`), `stype` - тип структуры (`stype(a)`),
-/// `utype` - полный объявленный тип (`utype(a)`).
+/// `type` — тип токена (`type(a)` в `.rt`), `stype` — тип структуры (`stype(a)`),
+/// `utype` — полный объявленный тип (`utype(a)`).
 // todo Другие варианты тут?
 ///
 /// В `cargo test` вывод виден только с `-- --nocapture`
@@ -232,9 +232,9 @@ pub(super) fn printStructureFacets(
 
 /// Проверка структуры одной строкой; выполняет код и сверяет только указанные грани.
 ///
-/// Грани юзаются в любом наборе - ровно те, что проверяет `.rt` файл: где-то сверяются
+/// Грани юзаются в любом наборе — ровно те, что проверяет `.rt` файл: где-то сверяются
 /// `type` и `stype`, где-то только один из них, где-то ещё и значение. Порядок граней
-/// фиксированный - `type` ⟶ `stype` ⟶ `utype` ⟶ `value`, как в `.rt` файлах (`type(a) | stype(a) = a`):
+/// фиксированный — `type` ⟶ `stype` ⟶ `utype` ⟶ `value`, как в `.rt` файлах (`type(a) | stype(a) = a`):
 /// ```ignore
 /// checkStructure!("a: U8 = 300", "a", type UInt, stype U8, value "255");
 /// 
@@ -245,15 +245,15 @@ pub(super) fn printStructureFacets(
 /// checkStructure!("a: U8 | 10 = 10", "a", stype primitiveValueNumber("10"), utype union![U8, primitiveValueNumber("10")]);
 /// ```
 ///
-/// Типы можно писать коротко - по имени варианта (`type UInt`, `stype U8`);
+/// Типы можно писать коротко — по имени варианта (`type UInt`, `stype U8`);
 /// полные формы `TokenType::UInt` и `StructureType::Primitive(PrimitiveType::U8)`
 /// тоже работают.
 ///
-/// Грань `mut` - тоже коротко: `mut Variable` (полная форма - `mut StructureMut::Variable`).
+/// Грань `mut` — тоже коротко: `mut Variable` (полная форма — `mut StructureMut::Variable`).
 ///
-/// Грани: `type` - тип токена (`type(a)` в `.rt`), `stype` - тип структуры (`stype(a)`),
-/// `utype` - полный объявленный тип: набор вариантов объединения (`utype(a)`), а без
-/// объединения он равен `stype`; `value` - значение (`{a}`).
+/// Грани: `type` — тип токена (`type(a)` в `.rt`), `stype` — тип структуры (`stype(a)`),
+/// `utype` — полный объявленный тип: набор вариантов объединения (`utype(a)`), а без
+/// объединения он равен `stype`; `value` — значение (`{a}`).
 /// 
 /// Две формы, имя структуры всегда строкой:
 /// ```ignore
@@ -278,10 +278,10 @@ pub(super) use checkStructure;
 
 // =================================================================================================
 
-/// Упрощение граней: короткая форма - к полной.
+/// Упрощение граней: короткая форма — к полной.
 ///
 /// Грани идут в порядке: `type` ⟶ `stype` ⟶ `utype` ⟶ `value` ⟶ `mut` ⟶ `lines`.
-/// У каждой грани две формы - короткая (имя варианта) и полная (выражение):
+/// У каждой грани две формы — короткая (имя варианта) и полная (выражение):
 /// ```ignore
 /// checkStructure!("a: U8 = 10", "a", stype U8); // Короткая.
 /// 
@@ -289,7 +289,7 @@ pub(super) use checkStructure;
 /// ```
 ///
 /// Короткая форма приводится к полной одинаково для всех граней: правило одно на грань,
-/// и одинаковое для всех - короткая форма `type` разбирается так же, как `stype` или `mut`.
+/// и одинаковое для всех — короткая форма `type` разбирается так же, как `stype` или `mut`.
 macro_rules! simplifyFacets
 {
   // Грани структуры: `main`, имя структуры, код.
@@ -310,7 +310,7 @@ macro_rules! simplifyFacets
     )
   }};
 
-  // Сокращения граней. Объявлены внутри раскрытия - наружу не торчат:
+  // Сокращения граней. Объявлены внутри раскрытия — наружу не торчат:
   // работают только на другие макросы и на сокращения граней.
   (@helpers) =>
   {
@@ -328,7 +328,7 @@ macro_rules! simplifyFacets
 
     // Короткая форма типа-примитива: `U8` вместо `StructureType::Primitive(PrimitiveType::U8)`.
     // Имя подставляется как вариант `PrimitiveType`, поэтому сокращение работает только
-    // для примитивов из этого перечисления; `Custom` и прочие не-примитивы - нет.
+    // для примитивов из этого перечисления; `Custom` и прочие не-примитивы — нет.
     #[allow(unused_macros)]
     macro_rules! simplifyStype
     {
@@ -340,7 +340,7 @@ macro_rules! simplifyFacets
       };
     }
 
-    // Короткая форма типа-примитива для грани `utype` - то же, что и для `stype`.
+    // Короткая форма типа-примитива для грани `utype` — то же, что и для `stype`.
     #[allow(unused_macros)]
     macro_rules! simplifyUtype
     {
@@ -377,7 +377,7 @@ macro_rules! simplifyFacets
 
   // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-  // Грань `type`: короткая форма - имя варианта.
+  // Грань `type`: короткая форма — имя варианта.
   (@step [$($context:tt)*] ($($done:tt)*); type $t:ident, $($rest:tt)*) =>
   {
     $crate::parser::testing::simplifyFacets!(
@@ -385,7 +385,7 @@ macro_rules! simplifyFacets
     )
   };
 
-  // Грань `type`: полная форма - выражение.
+  // Грань `type`: полная форма — выражение.
   (@step [$($context:tt)*] ($($done:tt)*); type $t:expr, $($rest:tt)*) =>
   {
     $crate::parser::testing::simplifyFacets!(
@@ -395,7 +395,7 @@ macro_rules! simplifyFacets
 
   // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-  // Грань `stype`: короткая форма - имя примитива.
+  // Грань `stype`: короткая форма — имя примитива.
   (@step [$($context:tt)*] ($($done:tt)*); stype $s:ident, $($rest:tt)*) =>
   {
     $crate::parser::testing::simplifyFacets!(
@@ -403,7 +403,7 @@ macro_rules! simplifyFacets
     )
   };
 
-  // Грань `stype`: полная форма - выражение.
+  // Грань `stype`: полная форма — выражение.
   (@step [$($context:tt)*] ($($done:tt)*); stype $s:expr, $($rest:tt)*) =>
   {
     $crate::parser::testing::simplifyFacets!(
@@ -413,7 +413,7 @@ macro_rules! simplifyFacets
 
   // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-  // Грань `utype`: короткая форма - имя примитива.
+  // Грань `utype`: короткая форма — имя примитива.
   (@step [$($context:tt)*] ($($done:tt)*); utype $u:ident, $($rest:tt)*) =>
   {
     $crate::parser::testing::simplifyFacets!(
@@ -421,7 +421,7 @@ macro_rules! simplifyFacets
     )
   };
 
-  // Грань `utype`: полная форма - выражение.
+  // Грань `utype`: полная форма — выражение.
   (@step [$($context:tt)*] ($($done:tt)*); utype $u:expr, $($rest:tt)*) =>
   {
     $crate::parser::testing::simplifyFacets!(
@@ -431,7 +431,7 @@ macro_rules! simplifyFacets
 
   // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-  // Грань `value`: только полная форма - выражение.
+  // Грань `value`: только полная форма — выражение.
   (@step [$($context:tt)*] ($($done:tt)*); value $v:expr, $($rest:tt)*) =>
   {
     $crate::parser::testing::simplifyFacets!(
@@ -441,7 +441,7 @@ macro_rules! simplifyFacets
 
   // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-  // Грань `mut`: короткая форма - имя варианта.
+  // Грань `mut`: короткая форма — имя варианта.
   (@step [$($context:tt)*] ($($done:tt)*); mut $m:ident, $($rest:tt)*) =>
   {
     $crate::parser::testing::simplifyFacets!(
@@ -449,7 +449,7 @@ macro_rules! simplifyFacets
     )
   };
 
-  // Грань `mut`: полная форма - выражение.
+  // Грань `mut`: полная форма — выражение.
   (@step [$($context:tt)*] ($($done:tt)*); mut $m:expr, $($rest:tt)*) =>
   {
     $crate::parser::testing::simplifyFacets!(
@@ -459,7 +459,7 @@ macro_rules! simplifyFacets
 
   // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-  // Грань `lines`: только полная форма - выражение.
+  // Грань `lines`: только полная форма — выражение.
   (@step [$($context:tt)*] ($($done:tt)*); lines $l:expr, $($rest:tt)*) =>
   {
     $crate::parser::testing::simplifyFacets!(
@@ -524,7 +524,7 @@ macro_rules! checkFacets
 pub(super) use checkFacets;
 
 /// Версия `checkStructure!` без паники: возвращает `Result<(), String>`,
-/// где первая неверная грань - `Err` с сообщением. Формы и грани те же.
+/// где первая неверная грань — `Err` с сообщением. Формы и грани те же.
 macro_rules! tryCheckStructure
 {
   // Код: `tryCheckStructure!("a := 10", "a", value "10")`.
@@ -550,7 +550,7 @@ pub(super) use tryCheckStructure;
 
 /// Выполняет код и возвращает основную структуру `main`.
 ///
-/// Код с переносами - сырой строкой `r#"..."#`, без `\n` внутри строки:
+/// Код с переносами — сырой строкой `r#"..."#`, без `\n` внутри строки:
 /// ```ignore
 /// let mainLink: Arc<RwLock<Structure>> = runCode!(r#"
 ///   a = 5
@@ -558,7 +558,7 @@ pub(super) use tryCheckStructure;
 /// "#);
 /// ```
 ///
-/// Код без переносов - обычной строкой:
+/// Код без переносов — обычной строкой:
 /// ```ignore
 /// let mainLink: Arc<RwLock<Structure>> = runCode!("a := 10");
 /// ````
@@ -591,11 +591,11 @@ pub(super) use runCode;
 /// // show for 'a' | type=UInt, stype=U8, utype=U8, value=10
 /// ```
 ///
-/// Грани: `type` - тип токена (`type(a)` в `.rt`), `stype` - тип структуры (`stype(a)`),
-/// `utype` - полный объявленный тип (`utype(a)`), `value` - значение (`{a}`),
-/// `mut` - уровень изменения, `lines` - сколько строк внутри.
+/// Грани: `type` — тип токена (`type(a)` в `.rt`), `stype` — тип структуры (`stype(a)`),
+/// `utype` — полный объявленный тип (`utype(a)`), `value` — значение (`{a}`),
+/// `mut` — уровень изменения, `lines` — сколько строк внутри.
 /// У метода и модуля токена нет — `type`/`value` печатаются как `<none>`.
-/// Грань хотя бы одна: ровно перечисленное, `все сразу` без перечисления - нет.
+/// Грань хотя бы одна: ровно перечисленное, `все сразу` без перечисления — нет.
 ///
 /// Вывод в консоль:
 /// ```text
@@ -624,7 +624,7 @@ pub(super) use showStructure;
 /// Смоук-тесты самого `tryCheckStructure!`: разные наборы граней компилируются и реально сверяются.
 /// Проверка выражения из токенов (без `a = ...`): сверяются только указанные грани.
 ///
-/// Грани: `type` - тип токена результата, `value` - его значение; порядок `type` ⟶ `value`.
+/// Грани: `type` — тип токена результата, `value` — его значение; порядок `type` ⟶ `value`.
 ///
 /// ```ignore
 /// checkExpression!("(1e308 + 1e308) - (1e308 + 1e308)", type UFloat, value "0");
@@ -632,7 +632,7 @@ pub(super) use showStructure;
 /// checkExpression!("1e309", value &f64::MAX.to_string()); // Только значение.
 /// ```
 ///
-/// Тип токена можно писать коротко - по имени варианта (`type UFloat`);
+/// Тип токена можно писать коротко — по имени варианта (`type UFloat`);
 /// полная форма `TokenType::UFloat` тоже работает.
 ///
 /// Паникует на первой неверной грани.
@@ -885,7 +885,7 @@ mod tests
     );
   }
 
-  /// Имя через точку - путь вниз: `f.n`.
+  /// Имя через точку — путь вниз: `f.n`.
   #[test]
   fn dottedName() -> ()
   {
@@ -913,7 +913,7 @@ mod tests
     checkStructure!("a := 10", "a", value "10");
   }
 
-  /// Только `utype`: без объединения равен `stype`, с объединением - набор вариантов.
+  /// Только `utype`: без объединения равен `stype`, с объединением — набор вариантов.
   #[test]
   fn utypeOnly() -> ()
   {
@@ -950,7 +950,7 @@ mod tests
     checkStructure!("a := 10", "a", stype U8, utype StructureType::Primitive(PrimitiveType::U8));
     checkStructure!("a := 10", "a", stype StructureType::Primitive(PrimitiveType::U8), utype U8);
     checkStructure!("a := 10", "a", stype U8, utype U8);
-    // Ошибка сверки - та же, что и у полной формы.
+    // Ошибка сверки — та же, что и у полной формы.
     assert_eq!(
       tryCheckStructure!("a := 10", "a", stype U16).unwrap_err(),
       tryCheckStructure!("a := 10", "a", stype StructureType::Primitive(PrimitiveType::U16)).unwrap_err()
@@ -967,12 +967,12 @@ mod tests
     checkStructure!("a := 10", "a", type TokenType::UInt);
     checkStructure!("a := 10", "a", type UInt, stype U8, value "10");
     checkStructure!("a := 10", "a", type TokenType::UInt, stype U8, value "10");
-    // Ошибка сверки - та же, что и у полной формы.
+    // Ошибка сверки — та же, что и у полной формы.
     assert_eq!(
       tryCheckStructure!("a := 10", "a", type Int).unwrap_err(),
       tryCheckStructure!("a := 10", "a", type TokenType::Int).unwrap_err()
     );
-    // `checkExpression!` - тот же принцип.
+    // `checkExpression!` — тот же принцип.
     checkExpression!("1 < 2", type True);
     checkExpression!("1 < 2", type TokenType::True);
   }
@@ -997,7 +997,7 @@ mod tests
       "a := 10", "a",
       stype U8, utype StructureType::Primitive(PrimitiveType::U8), value "10", mut Constant
     );
-    // Ошибка сверки - та же, что и у полной формы.
+    // Ошибка сверки — та же, что и у полной формы.
     assert_eq!(
       tryCheckStructure!("a := 10", "a", mut Variable).unwrap_err(),
       tryCheckStructure!("a := 10", "a", mut StructureMut::Variable).unwrap_err()
@@ -1009,7 +1009,7 @@ mod tests
     );
   }
 
-  /// Висячая запятая после граней - допустима.
+  /// Висячая запятая после граней — допустима.
   #[test]
   fn trailingCommaOnly() -> ()
   {
@@ -1038,7 +1038,7 @@ mod tests
       tryCheckStructure!("a: U8 | String = 10", "a", utype U8).unwrap_err(),
       "check utype in `a: U8 | String = 10` for 'a': expected 'U8', got 'U8 | String'"
     );
-    // Верные грани - `Ok`.
+    // Верные грани — `Ok`.
     assert!(tryCheckStructure!("a := 10", "a", type UInt, stype U8, value "10").is_ok());
   }
 

@@ -134,7 +134,7 @@ pub struct Structure
   
   /// Курсор чтения линий для `readStructureLines` и `go`.
   /// 
-  /// Это возникает потому, что `Structure` - это набор линий.
+  /// Это возникает потому, что `Structure` — это набор линий.
   /// 
   /// Раньше `lineIndex` был отдельным и поэтому `unsafe` pointer; Он мог бы быть
   /// локальным для `readStructureLines`, но тогда у `go` возникнут проблемы;
@@ -233,9 +233,9 @@ impl Structure
   // ===============================================================================================
 
   /// Полный объявленный тип: набор вариантов объединения (`a: U8 | 10` ⟶ `U8 | 10`),
-  /// а без объединения - `dataType`.
+  /// а без объединения — `dataType`.
   ///
-  /// `dataType` хранит выбранный вариант, `unionTypes` - исходный набор, 
+  /// `dataType` хранит выбранный вариант, `unionTypes` — исходный набор, 
   /// он не сужается при присваивании.
   //
   // todo rewrite desc + я не уверен что ей место здесь. Но она вроде объединяет 2 места.
@@ -270,7 +270,7 @@ impl Structure
   /// 
   /// Отличие от [`Self::getStructureByScope`]: этот метод опускается строго по пути вниз.
   ///
-  /// Но откуда взять саму голову ссылки `a` - решает не он: первый сегмент
+  /// Но откуда взять саму голову ссылки `a` — решает не он: первый сегмент
   /// [`Self::linkExpression`] ищет через [`Self::getStructureByScope`], то есть вверх.
   /// И только потом от найденной `a` идёт вниз.
   pub fn getStructureByLink(&self, name: &str) -> Option< Arc<RwLock<Self>> > 
@@ -278,7 +278,7 @@ impl Structure
     // "a.b.c" ⟶ ["a", "b", "c"]
     let segments: Vec<String> = Self::parseLink(name);
     
-    // Если имя пустое - нечего искать.
+    // Если имя пустое — нечего искать.
     if segments.is_empty() {
       return None
     }
@@ -327,7 +327,7 @@ impl Structure
       }
       drop(childrenOption);
 
-      // Если не найдено соответствие текущему сегменту - путь невалиден.
+      // Если не найдено соответствие текущему сегменту — путь невалиден.
       if !found {
         return None
       }
@@ -406,7 +406,7 @@ impl Structure
   
   /// Добавляет новую вложенную структуру в текущую структуру;
   /// 
-  /// Нет &mut self - что хорошо.
+  /// Нет `&mut self` — что хорошо.
   pub fn pushStructure(&self, structureLink: Arc<RwLock<Self>>) -> ()
   {
     let mut children: RwLockWriteGuard<Option< Vec< Arc<RwLock<Self>> > >> =
@@ -473,7 +473,7 @@ impl Structure
   /// 
   /// Это работает только для существующих структур.
   /// 
-  /// Например обычная `a = 10` первый раз - это линейная запись, а не Op.
+  /// Например обычная `a = 10` первый раз — это линейная запись, а не Op.
   /// 
   /// op это когда `a += 10` например или `a = 20; a = 10`, когда была структура.
   pub fn structureOp(
@@ -722,14 +722,14 @@ impl Structure
 
   // ===============================================================================================
 
-  /// Принимает formatQuote типы и получает возможное значение обычной строки;
+  /// Принимает `formatQuote` типы и получает возможное значение обычной строки;
   /// 
-  /// В основном всё сводится к получению токенов в {} через Token::readTokens(),
-  /// после чего результат проходит через expression и мы получаем обычную строку на выходе.
+  /// В основном всё сводится к получению токенов в `{}` через `Token::readTokens()`,
+  /// после чего результат проходит через `expression` и мы получаем обычную строку на выходе.
   pub(super) fn formatQuote(&self, tokenData: String) -> String 
   {
     let mut result: String = String::new(); // Cтрока которая будет получена в конце.
-    let mut expressionBuffer: String = String::new(); // Буфер для выражения между {}.
+    let mut expressionBuffer: String = String::new(); // Буфер для выражения между `{}`.
     let mut expressionRead: bool = false; // Флаг чтения в буфер выражения.
 
     let chars: Vec<char> = tokenData.chars().collect(); // Всех символы в строке.
@@ -750,7 +750,7 @@ impl Structure
         '}' =>
         { // Заканчиваем чтение выражения.
           expressionRead = false;
-          expressionBuffer += "\n"; // Это нужно чтобы успешно завершить чтение линии Tokenizer::readTokens().
+          expressionBuffer += "\n"; // Это нужно чтобы успешно завершить чтение линии `Tokenizer::readTokens()`.
 
           let mut expressionBufferTokens: Vec<Token> = 
           {
@@ -763,14 +763,14 @@ impl Structure
           // Отправляем все токены линии как выражение.
           if let Some(expressionData) = 
             self.expression(&mut expressionBufferTokens).getData().toString()
-          { // Записываем результат посчитанный между {}.
+          { // Записываем результат посчитанный между `{}`.
             result += &expressionData;
           }
-          // Обнуляем буфер, вдруг далее ещё есть выражения между {}.
+          // Обнуляем буфер, вдруг далее ещё есть выражения между `{}`.
           expressionBuffer = String::new();
         }
         _ => 
-        { // Запись символов кроме {}.
+        { // Запись символов кроме `{}`.
           if expressionRead
           { // Если флаг чтения активен, то записываем символы выражения.
             expressionBuffer.push(c);
@@ -804,9 +804,12 @@ impl Structure
   }
 
   /// То же, что [`Structure::expression`], но с явным ожиданием результата FFI-вызова:
-  /// - `Discard` — вызов-оператор (`lib.print(x)`), результат не нужен;
-  /// - `Infer`   — тип слева не указан (`a = lib.f(x)`), тип берётся от правой части;
-  /// - `Typed`   — тип слева указан (`a: I32 = lib.f(x)`), правая часть кастуется к левой.
+  /// 
+  /// - `Discard`: Вызов-оператор (`lib.print(x)`), результат не нужен;
+  /// 
+  /// - `Infer`: Тип слева не указан (`a = lib.f(x)`), тип берётся от правой части;
+  /// 
+  /// - `Typed`: Тип слева указан (`a: I32 = lib.f(x)`), правая часть кастуется к левой.
   ///
   /// Ожидание относится только к вызовам верхнего уровня этого выражения;
   /// вложенные выражения (параметры вызова, скобки) считаются через `expression`.
@@ -824,36 +827,36 @@ impl Structure
       { // Проверяем возможные варианты.
         TokenType::None => value[0].setDataType(TokenType::None),
         TokenType::Link =>
-        { // Если это TokenType::Link, то
-          let data: String = value[0].getData().toString().unwrap_or_default(); // token data.
+        { // Если это `TokenType::Link`, то
+          let data: String = value[0].getData().toString().unwrap_or_default(); // Token `data`.
           let mut link: Vec<String> = Self::parseLink(&data);
-          let linkResult: Token = self.linkExpression(None, &mut link, None); // Получаем результат от data.
-          match *linkResult.getDataType() // Предполагаем изменение dataType.
+          let linkResult: Token = self.linkExpression(None, &mut link, None); // Получаем результат от `data`.
+          match *linkResult.getDataType() // Предполагаем изменение `dataType`.
           {
             TokenType::Word =>
-            { // Если это TokenType::Word то теперь это будет TokenType::Link.
+            { // Если это `TokenType::Word`, то теперь это будет `TokenType::Link`.
               value[0].setDataType( TokenType::Link );
             }
             _ =>
-            { // Если это другие типы, то просто ставим новый dataType.
+            { // Если это другие типы, то просто ставим новый `dataType`.
               value[0].setDataType( *linkResult.getDataType() );
             }
           }
-          value[0].setData( linkResult.getData() ); // Ставим новый data.
+          value[0].setData( linkResult.getData() ); // Ставим новый `data`.
         }
         TokenType::Word =>
         { // Если это TokenType::Word, то
-          let data: String = value[0].getData().toString().unwrap_or_default(); // token data.
-          let linkResult: Token = self.linkExpression(None, &mut vec![data], None); // Получаем результат от data.
-          value[0].setDataType( *linkResult.getDataType() ); // Ставим новый dataType.
-          value[0].setData( linkResult.getData() );  // Ставим новый data.
+          let data: String = value[0].getData().toString().unwrap_or_default(); // Token `data`.
+          let linkResult: Token = self.linkExpression(None, &mut vec![data], None); // Получаем результат от `data`.
+          value[0].setDataType( *linkResult.getDataType() ); // Ставим новый `dataType`.
+          value[0].setData( linkResult.getData() );  // Ставим новый `data`.
         }
         TokenType::FormattedRawString | TokenType::FormattedString | TokenType::FormattedChar =>
-        { // Если это форматные варианты Char, String, RawString.
+        { // Если это форматные варианты `Char`, `String`, `RawString`.
           if let Some(valueData) = value[0].getData().toString()
           { // Получаем data этого токена и сразу вычисляем его значение.
             value[0].setData( self.formatQuote(valueData) );
-            // Получаем новый тип без formatted.
+            // Получаем новый тип без `formatted`.
             match *value[0].getDataType()
             {
               TokenType::FormattedRawString => value[0].setDataType(TokenType::RawString),
@@ -899,7 +902,7 @@ impl Structure
         }
         TokenType::Link =>
         { // Это ссылка на структуру, может выдать значение, запустить метод и т.д.
-          // todo ? хз что это, имелось ввиду не для ffi.
+          // todo ? хз что это, имелось ввиду не для FFI.
           //let parameters: Parameters = self.getCallParameters(value, i, &mut valueLength);
 
           let data: String = value[i].getData().toString().unwrap_or_default();
@@ -947,7 +950,7 @@ impl Structure
                     let libraryPath: String = tokens[0].getData().toString().unwrap();
                     let methodName: String = tokens[1].getData().toString().unwrap();
 
-                    // Получаем аргументы из value[i+1] - скобка;
+                    // Получаем аргументы из `value[i+1]` — скобка;
                     // Без скобок это не вызов, а просто ссылка на метод.
                     if !(i+1 < valueLength && *value[i+1].getDataType() == TokenType::CircleBracketBegin) {
                       break 'none;
@@ -958,16 +961,16 @@ impl Structure
                     let mut parametersTokens: Vec<Token> = parameters.getAllExpressions(self).unwrap_or_default();
 
                     // Вызов через FFI.
-                    // Если мы внутри FFI блока — используем scope retention. 
+                    // Если мы внутри FFI блока — используем `scope retention`. 
                     // Иначе —  временный scope через макрос.
-                    // Тип результата задаёт expect: Discard / Infer / Typed (см. bridge::FfiExpect).
+                    // Тип результата задаёт expect: `Discard` / `Infer` / `Typed` (см. `bridge::FfiExpect`).
                     // todo Заменить string на abi-ffi
                     let ffiResult: Result<Token, String> = if let Some(result) = 
                       scopeStack::withCurrentFfiScope(|scope| {
                         callExternalWithScope(scope, &libraryPath, &methodName, &mut parametersTokens, expect)
                       }) 
                     { result } // Мы внутри FFI блока — scope уже удержан.
-                    // Временный scope.
+                    // Временный `scope`.
                     else { callExternal(&libraryPath, &methodName, &mut parametersTokens, expect) };
                     
                     //
@@ -982,7 +985,7 @@ impl Structure
                         value[i].setDataType(TokenType::None);
                         value[i].setData(None);
                       }
-                      /* todo Вообще мог быть отдельный флаг для работы - чтобы выводить ошибки.
+                      /* todo Вообще мог быть отдельный флаг для работы — чтобы выводить ошибки.
                            Или можно сделать это частью скрытых полей вывода по типу .error и т.д.    
                       Err(e) => {
                         eprintln!("[rts FFI] lib='{}' method='{}' err='{}'", libraryPath, methodName, e);
@@ -1020,7 +1023,7 @@ impl Structure
           }
         } 
         TokenType::Minus =>
-        { // Это выражение в круглых скобках, но перед ними отрицание -
+        { // Это выражение в круглых скобках, но перед ними отрицание `-`.
           if i+1 < valueLength &&
              *value[i+1].getDataType() == TokenType::CircleBracketBegin
           { // Считаем выражение внутри скобок.
@@ -1145,14 +1148,14 @@ impl Structure
     }
 
     // Далее идут варианты математических и логических операций.
-    // Проверка /
+    // Проверка `/`
     // todo * пока отключен: его нужно включать вместе с проверкой Value::Mul
     self.expressionOp(value, &mut valueLength, &[TokenType::Divide]);
 
-    // Проверка + и -
+    // Проверка `+` и `-`
     self.expressionOp(value, &mut valueLength, &[TokenType::Plus, TokenType::Minus]);
 
-    // Проверка сравнений: результат True/False (#39).
+    // Проверка сравнений: результат `True`/`False` (#39).
     // Идут после арифметики, поэтому `a + 1 = b` читается как `(a + 1) = b`.
     self.expressionOp(value, &mut valueLength,
       &[TokenType::Equals, TokenType::NotEquals,
@@ -1200,12 +1203,12 @@ impl Structure
         break;
       }
       if i == 0
-      { // Если i == 0, не можем начать, потому что нужен оператор.
+      { // Если `i == 0`, не можем начать, потому что нужен оператор.
         i += 1; 
         continue;
       }
 
-      // true - если будет входящий в operations операция.
+      // `true` — если будет входящий в operations операция.
       token = value[i].clone();
       tokenType = token.getDataType();
       if i+1 < *valueLength && operations.contains(tokenType)
@@ -1217,10 +1220,9 @@ impl Structure
         *valueLength -= 2;
         continue;
       } else
-      // Подразумевается, что нет оператора - поэтому два операнда,
-      // поэтому мы можем проверить:
-      //   value -value2
-      // Потому что минус входит в число и мы можем просто проверить 2 токена.
+      // Подразумевается, что нет оператора — поэтому два операнда,
+      // поэтому мы можем проверить: `value -value2`;
+      // потому что минус входит в число и мы можем просто проверить 2 токена.
       // Это то же самое, что: `10-20` = `10+(-20)`.
       //
       // Это только для + и -; в остальных проходах слитый минус (`-6`)
@@ -1230,7 +1232,7 @@ impl Structure
       {
         value[i-1] = TokenType::Plus.calculate(&value[i-1], &value[i]);
 
-        value.remove(i); // remove UInt.
+        value.remove(i); // Remove `UInt`.
         *valueLength -= 1;
         continue;
       }

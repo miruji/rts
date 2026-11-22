@@ -48,7 +48,7 @@ if (!existsSync(outputPath)) {
 // optimize
 await $`strip ${outputPath}`.nothrow();
 
-// Здесь также могло быть сжатие - но оно режет скорость работы.
+// Здесь также могло быть сжатие — но оно режет скорость работы.
 
 const dest: string = join(scriptDir, "rts");
 

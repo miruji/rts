@@ -10,7 +10,7 @@ use crate::tokenizer::types::tokenType::TokenType;
 /// 
 /// Представляет strings, numbers, operators и так далее.
 /// 
-// todo Как одна из интересных идей - сделать `enum` для типов токенов и тогда
+// todo Как одна из интересных идей — сделать `enum` для типов токенов и тогда
 //  можно будет делать токены не со всеми полями. Это может быть гибридной структурой.
 #[derive(Clone)]
 pub struct Token
@@ -215,10 +215,10 @@ impl fmt::Display for Token
   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result
   {
     if let Some(data) = self.data.getAll()
-    { // Есть данные - печатаем как символы.
+    { // Есть данные — печатаем как символы.
       write!(f, "{}", std::str::from_utf8(data).unwrap_or_default())
     } else
-    { // Данных нет - печатаем тип.
+    { // Данных нет — печатаем тип.
       write!(f, "{}", self.getDataType().to_string())
     }
     //
@@ -230,10 +230,10 @@ impl fmt::Debug for Token
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result
   {
     if let Some(data) = self.data.getAll()
-    { // Есть данные - печатаем как символы.
+    { // Есть данные — печатаем как символы.
       write!(f, "{}", std::str::from_utf8(data).unwrap_or_default())
     } else
-    { // Данных нет - печатаем тип.
+    { // Данных нет — печатаем тип.
       write!(f, "{}", self.getDataType().to_string())
     }
     //

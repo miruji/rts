@@ -211,10 +211,10 @@ fn namedStructureOneLine() -> ()
   let _ = std::fs::remove_file(&libraryPath);
 }
 
-/// 8: Тег с именем на строке, а структура - на следующей строке.
+/// 8: Тег с именем на строке, а структура — на следующей строке.
 ///
 /// Тег не должен "висеть" на структуре ниже: токен на имя может быть только один.
-/// Структура ниже - обычная вложенная структура, без FFI тега.
+/// Структура ниже — обычная вложенная структура, без FFI тега.
 #[test]
 fn incompleteFfiTag() -> ()
 {
@@ -234,11 +234,11 @@ fn incompleteFfiTag() -> ()
 
   let main: Arc<RwLock<Structure>> = runCodeFile(&path);
 
-  // Структура ниже - создана, как обычная вложенная структура.
+  // Структура ниже — создана, как обычная вложенная структура.
   checkStructure!(main, "plain", stype Method);
   // Но это не FFI-структура: тело не исполняется.
   checkStructure!(main, "result", stype U32, value "0");
-  // Тег с именем, но без тела - не структура.
+  // Тег с именем, но без тела — не структура.
   assert!(main.read().unwrap().getStructureByScope("name").is_none());
 
   let _ = std::fs::remove_file(&path);
